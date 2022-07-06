@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# 控制台字体
 red() {
     echo -e "\033[31m\033[01m$1\033[0m"
 }
@@ -39,7 +38,7 @@ done
 checkvirt(){
     case "$(systemd-detect-virt)" in
         openvz) echo "" ;;
-        * ) red "脚本仅支持OpenVZ的VPS启用TUN模块！" && exit 1 ;;
+        * ) red "脚本仅支持OpenVZ虚拟化架构的VPS启用TUN模块！" && exit 1 ;;
     esac
 }
 
@@ -55,7 +54,7 @@ openTUN(){
         red "检测到目前VPS已经启用TUN模块，无需重复启用"
     fi
     if [[ $TUNStatus == 0 ]]; then
-        yellow "检测到VPS架构为OpenVZ，正在尝试使用脚本启用TUN"
+        yellow "检测到VPS虚拟化架构为OpenVZ，正在尝试使用脚本启用TUN"
         cd /dev
         mkdir net
         mknod net/tun c 10 200
