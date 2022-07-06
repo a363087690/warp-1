@@ -647,7 +647,7 @@ install_wireproxy(){
     wget -N https://raw.githubusercontents.com/taffychan/warp/main/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
     chmod +x /usr/local/bin/wireproxy
     
-    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
