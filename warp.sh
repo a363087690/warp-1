@@ -1171,7 +1171,8 @@ warpnf(){
     esac
 }
 
-show_usage() {
+show_usage(){
+    echo ""
     echo "WARP 管理脚本使用方法: "
     echo "------------------------------------------"
     echo "warp              - 显示管理菜单 (功能更多)"
@@ -1188,6 +1189,7 @@ show_usage() {
     echo "warp ur           - 卸载 WireProxy-WARP 代理模式"
     echo "warp u            - 全部卸载 WARP 及脚本"
     echo "------------------------------------------"
+    echo ""
 }
 
 menu(){
