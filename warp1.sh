@@ -39,6 +39,12 @@ done
 
 [[ $EUID -ne 0 ]] && red "注意: 请在root用户下运行脚本" && exit 1
 
+main=(uname -r | awk -F . '{print $1}')
+minor=(uname -r | awk -F . '{print $2}')
+tun=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
+virt=$(systemd-detect-virt)
+vsid=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+
 archAffix(){
     case "$(uname -m)" in
         i686 | i386 ) echo '386' ;;
@@ -168,19 +174,15 @@ check_status(){
 }
 
 check_tun(){
-    vpsvirt=$(systemd-detect-virt)
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    TUN=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
-    if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
-        if [[ $vpsvirt == lxc ]]; then
+    if [[ ! $tun =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
+        if [[ $virt == lxc ]]; then
             if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
                 red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
                 exit 1
             else
                 return 0
             fi
-        elif [[ $vpsvirt == "openvz" ]]; then
+        elif [[ $virt == "openvz" ]]; then
             wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
@@ -269,9 +271,6 @@ wgcfpostd(){
 }
 
 install_wgcf(){
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    vsid=`grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1`
     [[ $SYSTEM == "CentOS" ]] && [[ ${vsid} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ${vsid} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${vsid} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
@@ -420,9 +419,6 @@ uninstall_wgcf(){
 }
 
 install_warpcli(){
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    vsid=`grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1`
     [[ $SYSTEM == "CentOS" ]] && [[ ! ${vsid} =~ 8|9 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8/9系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ! ${vsid} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && yellow "当前系统版本：${CMD} \nWARP-Cli暂时不支持Fedora系统" && exit 1
