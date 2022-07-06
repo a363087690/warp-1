@@ -231,55 +231,21 @@ wgcfconfig6(){
     sed -i '/0\.\0\/0/d' wgcf.conf
 }
 
-wgcfcheck4(){
-    yellow "正在启动 Wgcf-WARP"
-    wg-quick up wgcf >/dev/null 2>&1
-    
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    retry_time=1
-    until [[ $WgcfWARP4Status =~ "on"|"plus" ]]; do
-        wgcfFailAction
-    done
-    systemctl enable wg-quick@wgcf >/dev/null 2>&1
-    
-    WgcfIPv4=$(curl -s4m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
-}
-
-wgcfcheck6(){
-    yellow "正在启动 Wgcf-WARP"
-    wg-quick up wgcf >/dev/null 2>&1
-    
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    retry_time=1
-    until [[ $WgcfWARP6Status =~ "on"|"plus" ]]; do
-        wgcfFailAction
-    done
-    systemctl enable wg-quick@wgcf >/dev/null 2>&1
-    
-    WgcfIPv6=$(curl -s6m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
-}
-
-wgcfcheckd(){
+wgcfcheck(){
     yellow "正在启动 Wgcf-WARP"
     wg-quick up wgcf >/dev/null 2>&1
     
     WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     retry_time=1
-    until [[ $WgcfWARP4Status =~ on|plus ]] && [[ $WgcfWARP6Status =~ on|plus ]]; do
+    until [[ $WgcfWARP4Status =~ on|plus ]] || [[ $WgcfWARP6Status =~ on|plus ]]; do
         wgcfFailAction
     done
     systemctl enable wg-quick@wgcf >/dev/null 2>&1
     
-    WgcfIPv4=$(curl -s4m8 https://ip.gs -k)
-    WgcfIPv6=$(curl -s6m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
-    yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
+    green "Wgcf-WARP 已安装并启动成功"
+    check_status
+    statustext
 }
 
 wgcfdns4(){
@@ -416,19 +382,19 @@ install_wgcf(){
     cd /etc/wireguard
     
     if [[ $VPSIP == 0 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns6 && wgcfconfig4 && wgcfendpoint6 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns6 && wgcfpost6 && wgcfconfig6 && wgcfendpoint6 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns6 && wgcfpost6 && wgcfendpoint6 && wgcfcheckd
+        [[ $wgcfmode == 0 ]] && wgcfdns6 && wgcfconfig4 && wgcfendpoint6 && wgcfcheck
+        [[ $wgcfmode == 1 ]] && wgcfdns6 && wgcfpost6 && wgcfconfig6 && wgcfendpoint6 && wgcfcheck
+        [[ $wgcfmode == 2 ]] && wgcfdns6 && wgcfpost6 && wgcfendpoint6 && wgcfcheck
     fi
     if [[ $VPSIP == 1 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfendpoint4 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfconfig6 && wgcfendpoint4 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpost4 && wgcfendpoint4 && wgcfcheckd
+        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfendpoint4 && wgcfcheck
+        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfconfig6 && wgcfendpoint4 && wgcfcheck
+        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpost4 && wgcfendpoint4 && wgcfcheck
     fi
     if [[ $VPSIP == 2 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfpost6 && wgcfconfig6 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpostd && wgcfcheckd
+        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfcheck
+        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfpost6 && wgcfconfig6 && wgcfcheck
+        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpostd && wgcfcheck
     fi
 }
 
@@ -1326,11 +1292,4 @@ menu2(){
     choice4d
 }
 
-if [[ $# > 0 ]]; then
-    # 暂时没开发、以后再说
-    case "$1" in
-        * ) menu ;;
-    esac
-else
-    menu
-fi
+menu
