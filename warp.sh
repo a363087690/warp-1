@@ -325,6 +325,16 @@ wgcfpostd(){
 }
 
 install_wgcf(){
+    if [[ $1 == a ]]; then
+        wgcfmode=0
+    fi
+    if [[ $1 == b ]]; then
+        wgcfmode=1
+    fi
+    if [[ $1 == c ]]; then
+        wgcfmode=2
+    fi
+
     main=`uname  -r | awk -F . '{print $1}'`
     minor=`uname -r | awk -F . '{print $2}'`
     vsid=`grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1`
@@ -1367,9 +1377,9 @@ if [[ $# > 0 ]]; then
         c ) install_warpcli ;;
         r ) install_wireproxy ;;
         u ) uninstall_wgcf && uninstall_warpcli && uninstall_wireproxy && rm -f /usr/bin/warp ;;
-        ga ) check_status && wgcfmode=0 && install_wgcf ;;
-        gb ) check_status && wgcfmode=1 && install_wgcf ;;
-        gc ) check_status && wgcfmode=2 && install_wgcf ;;
+        ga ) check_status && install_wgcf a ;;
+        gb ) check_status && install_wgcf b ;;
+        gc ) check_status && install_wgcf c ;;
         og ) wgcf_switch ;;
         oc ) warpcli_switch ;;
         or ) wireproxy_switch ;;
