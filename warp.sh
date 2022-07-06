@@ -181,7 +181,7 @@ check_tun(){
                 return 0
             fi
         elif [[ $vpsvirt == "openvz" ]]; then
-            wget -N --no-check-certificate https://gitlab.com/misaka-blog/tun-script/-/raw/master/tun.sh && bash tun.sh
+            wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
             exit 1
@@ -336,12 +336,6 @@ install_wgcf(){
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
-        if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
-            if [[ $vpsvirt =~ "kvm"|"xen"|"microsoft"|"vmware"|"qemu" ]]; then
-                wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
-                chmod +x /usr/bin/wireguard-go
-            fi
-        fi
         if [[ $vsid == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
             wget -N https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
@@ -349,12 +343,6 @@ install_wgcf(){
     fi
     if [[ $SYSTEM == "Fedora" ]]; then
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
-        if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
-            if [[ $vpsvirt =~ "kvm"|"xen"|"microsoft"|"vmware"|"qemu" ]]; then
-                wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
-                chmod +x /usr/bin/wireguard-go
-            fi
-        fi
     fi
     if [[ $SYSTEM == "Debian" ]]; then
         ${PACKAGE_UPDATE[int]}
@@ -362,12 +350,6 @@ install_wgcf(){
         echo "deb http://deb.debian.org/debian $(lsb_release -sc)-backports main" | tee /etc/apt/sources.list.d/backports.list
         ${PACKAGE_UPDATE[int]}
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
-        if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
-            if [[ $vpsvirt =~ "kvm"|"xen"|"microsoft"|"vmware"|"qemu" ]]; then
-                ${PACKAGE_INSTALL[int]} --no-install-recommends linux-headers-$(uname -r)
-                ${PACKAGE_INSTALL[int]} --no-install-recommends wireguard-dkms
-            fi
-        fi
     fi
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
@@ -377,19 +359,14 @@ install_wgcf(){
             ${PACKAGE_UPDATE[int]}
         fi
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
-        if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
-            if [[ $vpsvirt =~ "kvm"|"xen"|"microsoft"|"vmware"|"qemu" ]]; then
-                ${PACKAGE_INSTALL[int]} --no-install-recommends wireguard-dkms
-            fi
-        fi
     fi
     
-    if [[ $vpsvirt =~ lxc|openvz|zvm ]]; then
-        wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
+    if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $vpsvirt =~ lxc|openvz|zvm ]]; then
+        wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
         chmod +x /usr/bin/wireguard-go
     fi
     
-    wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wgcf-latest-linux-$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
@@ -667,10 +644,10 @@ install_wireproxy(){
         ${PACKAGE_INSTALL[int]} sudo curl wget htop inetutils-ping screen
     fi
     
-    wget -N https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
+    wget -N https://raw.githubusercontents.com/taffychan/warp/main/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
     chmod +x /usr/local/bin/wireproxy
     
-    wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/wgcf-latest-linux-$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
