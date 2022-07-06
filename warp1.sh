@@ -936,7 +936,7 @@ warpsw1(){
                     
                     wg-quick up wgcf >/dev/null 2>&1
                     
-                    red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
+                    red "WARP Teams配置信息有误, 已自动降级至WARP 免费账户 / WARP+"
                 fi
             done
             green "Wgcf-WARP 账户类型切换为 WARP Teams 成功！"
@@ -1065,7 +1065,7 @@ warpsw3(){
                     warpsw3_freeplus
                     
                     systemctl start wireproxy-warp
-                    red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
+                    red "WARP Teams配置信息有误, 已自动降级至WARP 免费账户 / WARP+"
                 fi
             done
             green "WireProxy-WARP代理模式 账户类型切换为 WARP Teams 成功！"
