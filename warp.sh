@@ -1149,10 +1149,10 @@ warpnf(){
     green "4. WireProxy-WARP 代理模式"
     read -rp "请选择客户端 [1-4]: " clientInput
     case "$clientInput" in
-        1 ) wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/wgcf-warp/netfilx4.sh && bash netfilx4.sh ;;
-        2 ) wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/wgcf-warp/netfilx6.sh && bash netfilx6.sh ;;
-        3 ) wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/warp-cli/netfilxcli.sh && bash netfilxcli.sh ;;
-        4 ) wget -N --no-check-certificate https://gitlab.com/misaka-blog/warp-script/-/raw/master/wireproxy-warp/netfilx-wireproxy.sh && bash netfilx-wireproxy.sh ;;
+        1 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilx4.sh && bash netfilx4.sh ;;
+        2 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilx6.sh && bash netfilx6.sh ;;
+        3 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilxcli.sh && bash netfilxcli.sh ;;
+        4 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilxwire.sh && bash netfilxwire.sh ;;
     esac
 }
 
