@@ -246,7 +246,7 @@ wgcfcheck4(){
     show_usage
     green "Wgcf-WARP 已启动成功"
     yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
-    cp warp.sh /usr/bin/warp
+    cp -f warp.sh /usr/bin/warp
     chmod +x /usr/bin/warp
 }
 
@@ -265,7 +265,7 @@ wgcfcheck6(){
     show_usage
     green "Wgcf-WARP 已启动成功"
     yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
-    cp warp.sh /usr/bin/warp
+    cp -f warp.sh /usr/bin/warp
     chmod +x /usr/bin/warp
 }
 
@@ -287,7 +287,7 @@ wgcfcheckd(){
     green "Wgcf-WARP 已启动成功"
     yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
     yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
-    cp warp.sh /usr/bin/warp
+    cp -f warp.sh /usr/bin/warp
     chmod +x /usr/bin/warp
 }
 
@@ -560,7 +560,7 @@ install_warpcli(){
     green "WARP-Cli代理模式已安装并启动成功!"
     yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
     yellow "WARP-Cli代理模式的IP为: $socks5IP"
-    cp warp.sh /usr/bin/warp
+    cp -f warp.sh /usr/bin/warp
     chmod +x /usr/bin/warp
 }
 
@@ -772,7 +772,7 @@ TEXT
     green "WireProxy-WARP代理模式已安装并启动成功!"
     yellow "本地Socks5代理为:  127.0.0.1:$WireProxyPort"
     yellow "WireProxy-WARP代理模式的IP为: $socks5IP"
-    cp warp.sh /usr/bin/warp
+    cp -f warp.sh /usr/bin/warp
     chmod +x /usr/bin/warp
 }
 
