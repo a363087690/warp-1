@@ -1166,6 +1166,25 @@ warpnf(){
     esac
 }
 
+show_usage() {
+    echo "WARP 管理脚本使用方法: "
+    echo "------------------------------------------"
+    echo "warp              - 显示管理菜单 (功能更多)"
+    echo "warp ga           - 安装 Wgcf-WARP 单栈模式 IPv4"
+    echo "warp gb           - 安装 Wgcf-WARP 单栈模式 IPv6"
+    echo "warp gc           - 安装 Wgcf-WARP 双栈模式"
+    echo "warp c            - 安装 WARP-Cli 代理模式"
+    echo "warp r            - 安装 WireProxy-WARP 代理模式"
+    echo "warp og           - Wgcf-WARP 开关"
+    echo "warp oc           - WARP-Cli 代理模式开关"
+    echo "warp or           - WireProxy-WARP 代理模式开关"
+    echo "warp ug           - 卸载 Wgcf-WARP"
+    echo "warp uc           - 卸载 WARP-Cli 代理模式"
+    echo "warp ur           - 卸载 WireProxy-WARP 代理模式"
+    echo "warp u            - 全部卸载 WARP 及脚本"
+    echo "------------------------------------------"
+}
+
 menu(){
     check_status
     [[ $VPSIP == 0 ]] && menu0
@@ -1340,7 +1359,7 @@ if [[ $# > 0 ]]; then
     case "$1" in
         c ) install_warpcli ;;
         r ) install_wireproxy ;;
-        u ) uninstall_wgcf && uninstall_warpcli && uninstall_wireproxy ;;
+        u ) uninstall_wgcf && uninstall_warpcli && uninstall_wireproxy && rm -f /usr/bin/warp ;;
         ga ) check_status && wgcfmode=0 && install_wgcf ;;
         gb ) check_status && wgcfmode=1 && install_wgcf ;;
         gc ) check_status && wgcfmode=2 && install_wgcf ;;
