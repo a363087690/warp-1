@@ -35,6 +35,8 @@ done
 
 [[ -z $SYSTEM ]] && red "不支持VPS的当前系统，请使用主流的操作系统" && exit 1
 
+curr=$(pwd)
+
 checkvirt(){
     case "$(systemd-detect-virt)" in
         openvz) echo "" ;;
@@ -63,10 +65,10 @@ openTUN(){
         checkTUN
         if [[ $TUNStatus == 1 ]]; then
             green "OpenVZ VPS的TUN模块已启用成功！"
-            rm -f tun.sh
+            cd $curr && rm -f tun.sh
         else
             red "在OpenVZ VPS尝试开启TUN模块失败，请到VPS控制面板处开启" 
-            rm -f tun.sh
+            cd $curr && rm -f tun.sh
             exit 1
         fi
         cat <<EOF > /usr/bin/tun.sh
