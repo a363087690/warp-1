@@ -39,6 +39,12 @@ done
 
 [[ $EUID -ne 0 ]] && red "注意: 请在root用户下运行脚本" && exit 1
 
+main=$(uname -r | awk -F . '{print $1}')
+minor=$(uname -r | awk -F . '{print $2}')
+OSID=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+VIRT=$(systemd-detect-virt)
+TUN=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
+
 archAffix(){
     case "$(uname -m)" in
         i686 | i386 ) echo '386' ;;
@@ -168,35 +174,18 @@ check_status(){
 }
 
 check_tun(){
-    vpsvirt=$(systemd-detect-virt)
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    TUN=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
     if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
-        if [[ $vpsvirt == lxc ]]; then
+        if [[ $VIRT == lxc ]]; then
             if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
                 red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
                 exit 1
             else
                 return 0
             fi
-        elif [[ $vpsvirt == "openvz" ]]; then
+        elif [[ $VIRT == "openvz" ]]; then
             wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
-            exit 1
-        fi
-    fi
-}
-
-docker_warn(){
-    if [[ -n $(type -P docker) ]]; then
-        yellow "检测到Docker已安装, 如继续安装Wgcf-WARP, 则有可能会影响你的Docker容器"
-        read -rp "是否继续安装？[Y/N]：" yesno
-        if [[ $yesno =~ "Y"|"y" ]]; then
-            green "继续安装Wgcf-WARP"
-        else
-            red "取消安装Wgcf-WARP"
             exit 1
         fi
     fi
@@ -316,13 +305,10 @@ wgcfpostd(){
 }
 
 install_wgcf(){
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    vsid=`grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1`
-    [[ $SYSTEM == "CentOS" ]] && [[ ${vsid} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
-    [[ $SYSTEM == "Debian" ]] && [[ ${vsid} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
-    [[ $SYSTEM == "Fedora" ]] && [[ ${vsid} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
-    [[ $SYSTEM == "Ubuntu" ]] && [[ ${vsid} -lt 16 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
+    [[ $SYSTEM == "CentOS" ]] && [[ ${OSID} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
+    [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
+    [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
+    [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 16 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
     
     if [[ $c4 == "Hong Kong" || $c6 == "Hong Kong" ]]; then
         red "检测到地区为 Hong Kong 的VPS!"
@@ -331,12 +317,11 @@ install_wgcf(){
     fi
     
     check_tun
-    docker_warn
     
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
-        if [[ $vsid == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
+        if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
             wget -N https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
@@ -354,14 +339,14 @@ install_wgcf(){
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
         ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop screen inetutils-ping
-        if [[ $vsid =~ 16 ]]; then
+        if [[ $OSID =~ 16 ]]; then
             add-apt-repository ppa:wireguard/wireguard
             ${PACKAGE_UPDATE[int]}
         fi
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
     fi
     
-    if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $vpsvirt =~ lxc|openvz|zvm ]]; then
+    if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $VIRT =~ lxc|openvz|zvm ]]; then
         wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
         chmod +x /usr/bin/wireguard-go
     fi
@@ -468,13 +453,10 @@ uninstall_wgcf(){
 }
 
 install_warpcli(){
-    main=`uname  -r | awk -F . '{print $1}'`
-    minor=`uname -r | awk -F . '{print $2}'`
-    vsid=`grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1`
-    [[ $SYSTEM == "CentOS" ]] && [[ ! ${vsid} =~ 8|9 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8/9系统" && exit 1
-    [[ $SYSTEM == "Debian" ]] && [[ ! ${vsid} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
+    [[ $SYSTEM == "CentOS" ]] && [[ ! ${OSID} =~ 8|9 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8/9系统" && exit 1
+    [[ $SYSTEM == "Debian" ]] && [[ ! ${OSID} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && yellow "当前系统版本：${CMD} \nWARP-Cli暂时不支持Fedora系统" && exit 1
-    [[ $SYSTEM == "Ubuntu" ]] && [[ ! ${vsid} =~ 16|18|20 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Ubuntu 16.04/18.04/20.04系统" && exit 1
+    [[ $SYSTEM == "Ubuntu" ]] && [[ ! ${OSID} =~ 16|18|20 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Ubuntu 16.04/18.04/20.04系统" && exit 1
     
     check_tun
     
@@ -1326,11 +1308,4 @@ menu2(){
     choice4d
 }
 
-if [[ $# > 0 ]]; then
-    # 暂时没开发、以后再说
-    case "$1" in
-        * ) menu ;;
-    esac
-else
-    menu
-fi
+menu
