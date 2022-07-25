@@ -131,8 +131,8 @@ check_status(){
     
     v4=$(curl -s4m8 https://ip.gs -k)
     v6=$(curl -s6m8 https://ip.gs -k)
-    c4=$(curl -s4m8 https://ip.gs/country -k)
-    c6=$(curl -s6m8 https://ip.gs/country -k)
+    c4=$(curl -s4m8 "http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i=$(curl -s4m8 https://ip.gs/country -k)" | cut -d \" -f18 2>/dev/null)
+    c6=$(curl -s6m8 "http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i=$(curl -s6m8 https://ip.gs/country -k)" | cut -d \" -f18 2>/dev/null)
     n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     n6=$(curl -6 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     s5p=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
@@ -140,13 +140,13 @@ check_status(){
     if [[ -n $s5p ]]; then
         s5s=$(curl -sx socks5h://localhost:$s5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
         s5i=$(curl -sx socks5h://localhost:$s5p https://ip.gs -k --connect-timeout 8)
-        s5c=$(curl -sx socks5h://localhost:$s5p https://ip.gs/country -k --connect-timeout 8)
+        s5c=$(curl -sx socks5h://localhost:$s5p "http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i=$(curl -sx socks5h://localhost:$s5p https://ip.gs/country -k --connect-timeout 8)" --connect-timeout 8 | cut -d \" -f18 2>/dev/null;)
         s5n=$(curl -sx socks5h://localhost:$s5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     fi
     if [[ -n $w5p ]]; then
         w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
         w5i=$(curl -sx socks5h://localhost:$w5p https://ip.gs -k --connect-timeout 8)
-        w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
+        w5c=$(curl -sx socks5h://localhost:$w5p "http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)" --connect-timeout 8 | cut -d \" -f18 2>/dev/null;)
         w5n=$(curl -sx socks5h://localhost:$w5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     fi
     
