@@ -181,7 +181,7 @@ check_tun(){
                 return 0
             fi
         elif [[ $vpsvirt == "openvz" ]]; then
-            wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/tun.sh && bash tun.sh
+            wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
             exit 1
@@ -362,11 +362,11 @@ install_wgcf(){
     fi
     
     if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $vpsvirt =~ lxc|openvz|zvm ]]; then
-        wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
+        wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
         chmod +x /usr/bin/wireguard-go
     fi
     
-    wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
@@ -644,10 +644,10 @@ install_wireproxy(){
         ${PACKAGE_INSTALL[int]} sudo curl wget htop inetutils-ping screen
     fi
     
-    wget -N https://raw.githubusercontents.com/taffychan/warp/main/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
+    wget -N https://raw.githubusercontent.com/taffychan/warp/main/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
     chmod +x /usr/local/bin/wireproxy
     
-    wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
@@ -1149,10 +1149,10 @@ warpnf(){
     green "4. WireProxy-WARP 代理模式"
     read -rp "请选择客户端 [1-4]: " clientInput
     case "$clientInput" in
-        1 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilx4.sh && bash netfilx4.sh ;;
-        2 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilx6.sh && bash netfilx6.sh ;;
-        3 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilxcli.sh && bash netfilxcli.sh ;;
-        4 ) wget -N --no-check-certificate https://raw.githubusercontents.com/taffychan/warp/main/netfilxwire.sh && bash netfilxwire.sh ;;
+        1 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilx4.sh && bash netfilx4.sh ;;
+        2 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilx6.sh && bash netfilx6.sh ;;
+        3 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilxcli.sh && bash netfilxcli.sh ;;
+        4 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilxwire.sh && bash netfilxwire.sh ;;
     esac
 }
 
