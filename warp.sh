@@ -125,7 +125,7 @@ check_status(){
     [[ $IPv6Status == "plus" ]] && w6="${GREEN}WARP+ / Teams${PLAIN}"
     
     # VPSIP变量说明：0为纯IPv6 VPS、1为纯IPv4 VPS、2为原生双栈VPS
-    [[ -n $v66 ]] && [[ -z $v44 ]] && VPSIP=0
+    [[ -n $v66 ]] && [[ -z $v44 ]] && echo -e "nameserver 2a01:4f8:c2c:123f::1" > /etc/resolv.conf && VPSIP=0
     [[ -z $v66 ]] && [[ -n $v44 ]] && VPSIP=1
     [[ -n $v66 ]] && [[ -n $v44 ]] && VPSIP=2
     
