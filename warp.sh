@@ -1125,8 +1125,8 @@ warpnf(){
     case "$clientInput" in
         1 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix4.sh && bash netfilx4.sh ;;
         2 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix6.sh && bash netfilx6.sh ;;
-        3 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilxcli.sh && bash netfilxcli.sh ;;
-        4 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netfilxwire.sh && bash netfilxwire.sh ;;
+        3 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflixcli.sh && bash netfilxcli.sh ;;
+        4 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflixwire.sh && bash netfilxwire.sh ;;
     esac
 }
 
