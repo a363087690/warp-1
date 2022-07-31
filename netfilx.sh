@@ -154,7 +154,7 @@ statustext(){
 wgcfnfv4(){
     if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
         v4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-        if [[ $v4status == "on"|"plus" ]]; then
+        if [[ $v4status =~ "on"|"plus" ]]; then
             cat <<TEXT > /root/netflixv4.sh
 #!/bin/bash
 
@@ -198,9 +198,9 @@ failed(){
 
 check
 TEXT
-        screen -USdm netflixv4 bash /root/netflixv4.sh
-        green "已创建一个名为netflixv4的screen会话，可使用screen -r netflixv4查看脚本执行日志"
-        exit 1
+            screen -USdm netflixv4 bash /root/netflixv4.sh
+            green "已创建一个名为netflixv4的screen会话，可使用screen -r netflixv4查看脚本执行日志"
+            exit 1
         fi
     else
         red "未安装Wgcf-WARP，脚本自动退出！"
@@ -210,7 +210,9 @@ TEXT
 
 wgcfnfv6(){
     if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
-        cat <<TEXT > /root/netflixv6.sh
+        v6Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        if [[ $v6status =~ "on"|"plus" ]]; then
+            cat <<TEXT > /root/netflixv6.sh
 #!/bin/bash
 
 export LANG=en_US.UTF-8
@@ -253,9 +255,10 @@ failed(){
 
 check
 TEXT
-        screen -USdm netflixv6 bash /root/netflixv6.sh
-        green "已创建一个名为netflixv6的screen会话，可使用screen -r netflixv6查看脚本执行日志"
-        exit 1
+            screen -USdm netflixv6 bash /root/netflixv6.sh
+            green "已创建一个名为netflixv6的screen会话，可使用screen -r netflixv6查看脚本执行日志"
+            exit 1
+        fi
     else
         red "未安装Wgcf-WARP，脚本自动退出！"
         exit 1
