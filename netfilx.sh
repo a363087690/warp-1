@@ -210,7 +210,7 @@ TEXT
 
 wgcfnfv6(){
     if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
-        v6Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        v6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
         if [[ $v6status =~ "on"|"plus" ]]; then
             cat <<TEXT > /root/netflixv6.sh
 #!/bin/bash
