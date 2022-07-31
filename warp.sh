@@ -60,8 +60,8 @@ archAffix(){
 
 check_best_mtu(){
     yellow "正在设置MTU最佳值, 请稍等..."
-    v66=`curl -s6m8 https://ip.gs -k`
-    v44=`curl -s4m8 https://ip.gs -k`
+    v66=$(curl -s6m8 https://ip.gs -k)
+    v44=$(curl -s4m8 https://ip.gs -k)
     MTUy=1500
     MTUc=10
     if [[ -n ${v66} && -z ${v44} ]]; then
@@ -109,12 +109,12 @@ check_status(){
     if [[ $IPv4Status =~ "on"|"plus" ]] || [[ $IPv6Status =~ "on"|"plus" ]]; then
         # 关闭Wgcf-WARP，以防识别有误
         wg-quick down wgcf >/dev/null 2>&1
-        v66=`curl -s6m8 https://ip.gs -k`
-        v44=`curl -s4m8 https://ip.gs -k`
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
         wg-quick up wgcf >/dev/null 2>&1
     else
-        v66=`curl -s6m8 https://ip.gs -k`
-        v44=`curl -s4m8 https://ip.gs -k`
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
     fi
     
     [[ $IPv4Status == "off" ]] && w4="${RED}未启用WARP${PLAIN}"
