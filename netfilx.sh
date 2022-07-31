@@ -378,6 +378,7 @@ TEXT
 }
 
 menu(){
+    echo ""
     yellow "请选择需要刷NetFilx IP的WARP客户端:"
     green "1. Wgcf-WARP IPv4模式"
     green "2. Wgcf-WARP IPv6模式"
