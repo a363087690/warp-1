@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 RED="\033[31m"
 GREEN="\033[32m"
 YELLOW="\033[33m"
-PLAIN='\033[0m'
+PLAIN="\033[0m"
 
 red(){
     echo -e "\033[31m\033[01m$1\033[0m"
@@ -27,6 +27,8 @@ PACKAGE_INSTALL=("apt -y install" "apt -y install" "yum -y install" "yum -y inst
 PACKAGE_REMOVE=("apt -y remove" "apt -y remove" "yum -y remove" "yum -y remove" "yum -y remove")
 PACKAGE_UNINSTALL=("apt -y autoremove" "apt -y autoremove" "yum -y autoremove" "yum -y autoremove" "yum -y autoremove")
 
+[[ $EUID -ne 0 ]] && red "注意: 请在root用户下运行脚本" && exit 1
+
 CMD=("$(grep -i pretty_name /etc/os-release 2>/dev/null | cut -d \" -f2)" "$(hostnamectl 2>/dev/null | grep -i system | cut -d : -f2)" "$(lsb_release -sd 2>/dev/null)" "$(grep -i description /etc/lsb-release 2>/dev/null | cut -d \" -f2)" "$(grep . /etc/redhat-release 2>/dev/null)" "$(grep . /etc/issue 2>/dev/null | cut -d \\ -f1 | sed '/^[ ]*$/d')")
 
 for i in "${CMD[@]}"; do
@@ -37,7 +39,7 @@ for ((int = 0; int < ${#REGEX[@]}; int++)); do
     [[ $(echo "$SYS" | tr '[:upper:]' '[:lower:]') =~ ${REGEX[int]} ]] && SYSTEM="${RELEASE[int]}" && [[ -n $SYSTEM ]] && break
 done
 
-[[ $EUID -ne 0 ]] && red "注意: 请在root用户下运行脚本" && exit 1
+[[ -z $SYSTEM ]] && red "目前你的VPS的操作系统暂未支持！" && exit 1
 
 main=$(uname -r | awk -F . '{print $1}')
 minor=$(uname -r | awk -F . '{print $2}')
@@ -45,20 +47,37 @@ OSID=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
 VIRT=$(systemd-detect-virt)
 TUN=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
 
+# Wgcf 去除IPv4/IPv6
+wg1="sed -i '/0\.0\.0\.0\/0/d' wgcf-profile.conf"
+wg2="sed -i '/\:\:\/0/d' wgcf-profile.conf"
+# Wgcf Endpoint
+wg3="sed -i 's/engage.cloudflareclient.com/162.159.193.10/g' wgcf-profile.conf"
+wg4="sed -i 's/engage.cloudflareclient.com/2606:4700:d0::a29f:c001/g' wgcf-profile.conf"
+# Wgcf DNS Servers
+wg5="sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844/g' wgcf-profile.conf"
+wg6="sed -i 's/1.1.1.1/2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' wgcf-profile.conf"
+# Wgcf 允许外部IP地址
+wg7='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+wg9='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+
+if [[ -z $(type -P curl) ]]; then
+    if [[ ! $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_UPDATE[int]}
+    fi
+    ${PACKAGE_INSTALL[int]} curl
+fi
+
 archAffix(){
     case "$(uname -m)" in
-        i686 | i386 ) echo '386' ;;
         x86_64 | amd64 ) echo 'amd64' ;;
-        armv5tel ) echo 'armv5' ;;
-        armv6l ) echo 'armv6' ;;
-        armv7 | armv7l ) echo 'armv7' ;;
         armv8 | arm64 | aarch64 ) echo 'arm64' ;;
         s390x ) echo 's390x' ;;
         * ) red "不支持的CPU架构!" && exit 1 ;;
     esac
 }
 
-check_best_mtu(){
+checkMTU(){
     yellow "正在设置MTU最佳值, 请稍等..."
     v66=$(curl -s6m8 https://ip.gs -k)
     v44=$(curl -s4m8 https://ip.gs -k)
@@ -92,88 +111,7 @@ check_best_mtu(){
     green "MTU 最佳值=$MTU 已设置完毕"
 }
 
-check_status(){
-    yellow "正在检查VPS系统及IP配置环境, 请稍等..."
-    if [[ -z $(type -P curl) ]]; then
-        yellow "检测curl未安装, 正在安装中..."
-        if [[ ! $SYSTEM == "CentOS" ]]; then
-            ${PACKAGE_UPDATE[int]}
-        fi
-        ${PACKAGE_INSTALL[int]} curl
-    fi
-    
-    IPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    Browser_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
-    
-    if [[ $IPv4Status =~ "on"|"plus" ]] || [[ $IPv6Status =~ "on"|"plus" ]]; then
-        # 关闭Wgcf-WARP，以防识别有误
-        wg-quick down wgcf >/dev/null 2>&1
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
-        wg-quick up wgcf >/dev/null 2>&1
-    else
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
-    fi
-    
-    [[ $IPv4Status == "off" ]] && w4="${RED}未启用WARP${PLAIN}"
-    [[ $IPv6Status == "off" ]] && w6="${RED}未启用WARP${PLAIN}"
-    [[ $IPv4Status == "on" ]] && w4="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $IPv6Status == "on" ]] && w6="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $IPv4Status == "plus" ]] && w4="${GREEN}WARP+ / Teams${PLAIN}"
-    [[ $IPv6Status == "plus" ]] && w6="${GREEN}WARP+ / Teams${PLAIN}"
-    
-    # VPSIP变量说明：0为纯IPv6 VPS、1为纯IPv4 VPS、2为原生双栈VPS
-    [[ -n $v66 ]] && [[ -z $v44 ]] && echo -e "nameserver 2a01:4f8:c2c:123f::1" > /etc/resolv.conf && VPSIP=0
-    [[ -z $v66 ]] && [[ -n $v44 ]] && VPSIP=1
-    [[ -n $v66 ]] && [[ -n $v44 ]] && VPSIP=2
-    
-    v4=$(curl -s4m8 https://ip.gs -k)
-    v6=$(curl -s6m8 https://ip.gs -k)
-    c4=$(curl -s4m8 https://ip.gs/country -k)
-    c6=$(curl -s6m8 https://ip.gs/country -k)
-    n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
-    n6=$(curl -6 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
-    s5p=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
-    w5p=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
-    if [[ -n $s5p ]]; then
-        s5s=$(curl -sx socks5h://localhost:$s5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        s5i=$(curl -sx socks5h://localhost:$s5p https://ip.gs -k --connect-timeout 8)
-        s5c=$(curl -sx socks5h://localhost:$s5p https://ip.gs/country -k --connect-timeout 8)
-        s5n=$(curl -sx socks5h://localhost:$s5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
-    fi
-    if [[ -n $w5p ]]; then
-        w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        w5i=$(curl -sx socks5h://localhost:$w5p https://ip.gs -k --connect-timeout 8)
-        w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
-        w5n=$(curl -sx socks5h://localhost:$w5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
-    fi
-    
-    [[ -z $s5s ]] || [[ $s5s == "off" ]] && s5="${RED}未启动${PLAIN}"
-    [[ -z $w5s ]] || [[ $w5s == "off" ]] && w5="${RED}未启动${PLAIN}"
-    [[ $s5s == "on" ]] && s5="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $w5s == "on" ]] && w5="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $s5s == "plus" ]] && s5="${GREEN}WARP+ / Teams${PLAIN}"
-    [[ $w5s == "plus" ]] && w5="${GREEN}WARP+ / Teams${PLAIN}"
-    
-    [[ -z $n4 ]] || [[ $n4 == "000" ]] && n4="${RED}无法检测Netflix状态${PLAIN}"
-    [[ -z $n6 ]] || [[ $n6 == "000" ]] && n6="${RED}无法检测Netflix状态${PLAIN}"
-    [[ $n4 == "200" ]] && n4="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $n6 == "200" ]] && n6="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $s5n == "200" ]] && s5n="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $w5n == "200" ]] && w5n="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $n4 == "403" ]] && n4="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $n6 == "403" ]] && n6="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $s5n == "403" ]]&& s5n="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $w5n == "403" ]]&& w5n="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $n4 == "404" ]] && n4="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $n6 == "404" ]] && n6="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $s5n == "404" ]] && s5n="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $w5n == "404" ]] && w5n="${YELLOW}Netflix 自制剧${PLAIN}"
-}
-
-check_tun(){
+checkTun(){
     if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
         if [[ $VIRT == lxc ]]; then
             if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
@@ -191,138 +129,107 @@ check_tun(){
     fi
 }
 
-wgcfFailAction(){
-    red "无法启动Wgcf-WARP, 正在尝试重启, 重试次数：$retry_time"
-    wg-quick down wgcf >/dev/null 2>&1
-    wg-quick up wgcf >/dev/null 2>&1
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    sleep 8
-    retry_time=$((${retry_time} + 1))
-    if [[ $retry_time == 6 ]]; then
-        uninstall_wgcf
-        echo ""
-        red "由于Wgcf-WARP启动重试次数过多, 已自动卸载Wgcf-WARP"
-        green "建议如下："
-        yellow "1. 建议使用系统官方源升级系统及内核加速! 如已使用第三方源及内核加速, 请务必更新到最新版, 或重置为系统官方源! "
-        yellow "2. 部分VPS系统过于精简, 相关依赖需自行安装后再重试"
-        yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用Wgcf-WARP"
-        yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
-        exit 1
+checkStatus(){
+    IPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ $IPv4Status =~ on|plus ]] || [[ $IPv6Status =~ on|plus ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
+        wg-quick up wgcf >/dev/null 2>&1
+    else
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
     fi
+
+    if [[ -n $v44 && -z $v66 ]]; then
+        if [[ $wgcfmode == 4 ]]; then
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4)"
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg2
+            wgcf4=$wg3
+        fi
+        if [[ $wgcfmode == 6 ]]; then
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP单栈模式 (原生 IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg1
+            wgcf3=$wg3
+        fi
+        if [[ $wgcfmode == 5 ]]; then
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg3
+        fi
+        if [[ $warpcli == 1 ]]; then
+            yellow "检测到为纯IPv4的VPS，正在安装WARP-Cli代理模式"
+        fi
+    fi
+    if [[ -z $v44 && -n $v66 ]]; then
+        if [[ $wgcfmode == 4 ]]; then
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg2
+            wgcf3=$wg4
+        fi
+        if [[ $wgcfmode == 6 ]]; then
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg8
+            wgcf3=$wg1
+            wgcf4=$wg4
+        fi
+        if [[ $wgcfmode == 5 ]]; then
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg2
+            wgcf3=$wg4
+        fi
+        if [[ $warpcli == 1 ]]; then
+            yellow "检测到为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli代理模式"
+            exit 1
+        fi
+    fi
+    if [[ -n $v44 && -n $v66 ]]; then
+        if [[ $wgcfmode == 4 ]]; then
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg9
+            wgcf3=$wg2
+        fi
+        if [[ $wgcfmode == 6 ]]; then
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP单栈模式 (原生 IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg9
+            wgcf3=$wg1
+        fi
+        if [[ $wgcfmode == 5 ]]; then
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg9
+        fi
+        if [[ $warpcli == 1 ]]; then
+            yellow "检测到为原生双栈的VPS，正在安装WARP-Cli代理模式"
+        fi
+    fi
+    sleep 2
 }
 
-wgcfconfig4(){
-    sed -i '/\:\:\/0/d' wgcf.conf
-}
+installWgcf(){
+    checkStatus
+    checkTun
 
-wgcfconfig6(){
-    sed -i '/0\.\0\/0/d' wgcf.conf
-}
-
-wgcfcheck4(){
-    yellow "正在启动 Wgcf-WARP"
-    wg-quick up wgcf >/dev/null 2>&1
-    
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    retry_time=1
-    until [[ $WgcfWARP4Status =~ "on"|"plus" ]]; do
-        wgcfFailAction
-    done
-    systemctl enable wg-quick@wgcf >/dev/null 2>&1
-    
-    WgcfIPv4=$(curl -s4m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
-}
-
-wgcfcheck6(){
-    yellow "正在启动 Wgcf-WARP"
-    wg-quick up wgcf >/dev/null 2>&1
-    
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    retry_time=1
-    until [[ $WgcfWARP6Status =~ "on"|"plus" ]]; do
-        wgcfFailAction
-    done
-    systemctl enable wg-quick@wgcf >/dev/null 2>&1
-    
-    WgcfIPv6=$(curl -s6m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
-}
-
-wgcfcheckd(){
-    yellow "正在启动 Wgcf-WARP"
-    wg-quick up wgcf >/dev/null 2>&1
-    
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    retry_time=1
-    until [[ $WgcfWARP4Status =~ on|plus ]] && [[ $WgcfWARP6Status =~ on|plus ]]; do
-        wgcfFailAction
-    done
-    systemctl enable wg-quick@wgcf >/dev/null 2>&1
-    
-    WgcfIPv4=$(curl -s4m8 https://ip.gs -k)
-    WgcfIPv6=$(curl -s6m8 https://ip.gs -k)
-    green "Wgcf-WARP 已启动成功"
-    yellow "Wgcf-WARP的IPv4 IP为: $WgcfIPv4"
-    yellow "Wgcf-WARP的IPv6 IP为: $WgcfIPv6"
-}
-
-wgcfdns4(){
-    sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844/g' wgcf.conf
-}
-
-wgcfdns6(){
-    sed -i 's/1.1.1.1/2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' wgcf.conf
-}
-
-wgcfendpoint4(){
-    sed -i 's/engage.cloudflareclient.com/162.159.193.10/g' wgcf.conf
-}
-
-wgcfendpoint6(){
-    sed -i 's/engage.cloudflareclient.com/[2606:4700:d0::a29f:c001]/g' wgcf.conf
-}
-
-wgcfpost4(){
-    sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 114.114.114.114 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-    sed -i "8 s/^/PostDown = ip -4 rule delete from $(ip route get 114.114.114.114 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-}
-
-wgcfpost6(){
-    sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2400:3200::1 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-    sed -i "8 s/^/PostDown = ip -6 rule delete from $(ip route get 2400:3200::1 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-}
-
-wgcfpostd(){
-    sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 114.114.114.114 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-    sed -i "8 s/^/PostDown = ip -4 rule delete from $(ip route get 114.114.114.114 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-    sed -i "9 s/^/PostUp = ip -6 rule add from $(ip route get 2400:3200::1 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-    sed -i "10 s/^/PostDown = ip -6 rule delete from $(ip route get 2400:3200::1 | grep -oP 'src \K\S+') lookup main\n/" wgcf.conf
-}
-
-install_wgcf(){
     [[ $SYSTEM == "CentOS" ]] && [[ ${OSID} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
     [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 16 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
-    
-    if [[ $c4 == "Hong Kong" || $c6 == "Hong Kong" ]]; then
-        red "检测到地区为 Hong Kong 的VPS!"
-        yellow "由于 CloudFlare 对 Hong Kong 屏蔽了 Wgcf, 因此无法使用 Wgcf-WARP。请使用其他地区的VPS"
-        exit 1
-    fi
-    
-    check_tun
-    
+
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
         if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
-            wget -N https://gitlab.com/misaka-blog/warp-script/-/raw/master/files/resolvconf -O /usr/sbin/resolvconf
+            wget -N https://raw.githubusercontent.com/taffychan/warp/main/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
     fi
@@ -353,7 +260,7 @@ install_wgcf(){
     
     wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
-    
+
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
         cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
         wgcfFile=1
@@ -371,13 +278,13 @@ install_wgcf(){
     
     if [[ ! $wgcfFile == 1 ]]; then
         yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-        read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-        if [[ -n $WPPlusKey ]]; then
-            sed -i "s/license_key.*/license_key = \"$WPPlusKey\"/g" wgcf-account.toml
-            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " WPPlusName
+        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+        if [[ -n $warpkey ]]; then
+            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
+            read -rp "请输入自定义设备名，如未输入则使用随机设备名: " warpname
             green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $WPPlusName ]]; then
-                wgcf update --name $(echo $WPPlusName | sed s/[[:space:]]/_/g)
+            if [[ -n $warpname ]]; then
+                wgcf update --name $(echo $warpname | sed s/[[:space:]]/_/g)
             else
                 wgcf update
             fi
@@ -386,8 +293,13 @@ install_wgcf(){
     
     wgcf generate
     chmod +x wgcf-profile.conf
+
+    echo $wgcf1 | sh
+    echo $wgcf2 | sh
+    echo $wgcf3 | sh
+    echo $wgcf4 | sh
     
-    check_best_mtu
+    checkMTU
     sed -i "s/MTU.*/MTU = $MTU/g" wgcf-profile.conf
     
     if [[ ! -d "/etc/wireguard" ]]; then
@@ -397,27 +309,40 @@ install_wgcf(){
     
     mv -f wgcf-profile.conf /etc/wireguard/wgcf.conf
     mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml
+
+    yellow "正在启动 Wgcf-WARP"
+    wg-quick up wgcf >/dev/null 2>&1
     
-    cd /etc/wireguard
+    WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    retry_time=1
+    until [[ $WgcfV4Status =~ "on"|"plus" ]] || [[ $WgcfV6Status =~ "on"|"plus" ]]; do
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        sleep 8
+        retry_time=$((${retry_time} + 1))
+        if [[ $retry_time == 6 ]]; then
+            uninstallWgcf
+            echo ""
+            red "由于Wgcf-WARP启动重试次数过多, 已自动卸载Wgcf-WARP"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速! 如已使用第三方源及内核加速, 请务必更新到最新版, 或重置为系统官方源! "
+            yellow "2. 部分VPS系统过于精简, 相关依赖需自行安装后再重试"
+            yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用Wgcf-WARP"
+            yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+    done
+    systemctl enable wg-quick@wgcf >/dev/null 2>&1
     
-    if [[ $VPSIP == 0 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns6 && wgcfconfig4 && wgcfendpoint6 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns6 && wgcfpost6 && wgcfconfig6 && wgcfendpoint6 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns6 && wgcfpost6 && wgcfendpoint6 && wgcfcheckd
-    fi
-    if [[ $VPSIP == 1 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfendpoint4 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfconfig6 && wgcfendpoint4 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpost4 && wgcfendpoint4 && wgcfcheckd
-    fi
-    if [[ $VPSIP == 2 ]]; then
-        [[ $wgcfmode == 0 ]] && wgcfdns4 && wgcfpost4 && wgcfconfig4 && wgcfcheck4
-        [[ $wgcfmode == 1 ]] && wgcfdns4 && wgcfpost6 && wgcfconfig6 && wgcfcheck6
-        [[ $wgcfmode == 2 ]] && wgcfdns4 && wgcfpostd && wgcfcheckd
-    fi
+    green "Wgcf-WARP 已安装成功"
+    echo ""
+    showIP
 }
 
-wgcf_switch(){
+switchWgcf(){
     WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     
@@ -436,7 +361,7 @@ wgcf_switch(){
     fi
 }
 
-uninstall_wgcf(){
+uninstallWgcf(){
     wg-quick down wgcf 2>/dev/null
     systemctl disable wg-quick@wgcf 2>/dev/null
     ${PACKAGE_UNINSTALL[int]} wireguard-tools wireguard-dkms
@@ -452,25 +377,16 @@ uninstall_wgcf(){
     green "Wgcf-WARP 已彻底卸载成功!"
 }
 
-install_warpcli(){
+installCli(){
     [[ $SYSTEM == "CentOS" ]] && [[ ! ${OSID} =~ 8 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ! ${OSID} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && yellow "当前系统版本：${CMD} \nWARP-Cli暂时不支持Fedora系统" && exit 1
     [[ $SYSTEM == "Ubuntu" ]] && [[ ! ${OSID} =~ 16|18|20|22 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Ubuntu 16.04/18.04/20.04/22.04系统" && exit 1
     
-    check_tun
-    
     [[ ! $(archAffix) == "amd64" ]] && red "WARP-Cli暂时不支持目前VPS的CPU架构, 请使用CPU架构为amd64的VPS" && exit 1
     
-    v66=`curl -s6m8 https://ip.gs -k`
-    v44=`curl -s4m8 https://ip.gs -k`
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    
-    if [[ -n ${v66} && -z ${v44} ]]; then
-        red "WARP-Cli 代理模式不支持纯IPv6的VPS!"
-        exit 1
-    fi
+    checkStatus
+    checkTun
     
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
@@ -501,9 +417,9 @@ install_warpcli(){
     
     warp-cli --accept-tos register >/dev/null 2>&1
     yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-    read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-    if [[ -n $WPPlusKey ]]; then
-        warp-cli --accept-tos set-license "$WPPlusKey" >/dev/null 2>&1 && sleep 1
+    read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+    if [[ -n $warpkey ]]; then
+        warp-cli --accept-tos set-license "$warpkey" >/dev/null 2>&1 && sleep 1
         if [[ $(warp-cli --accept-tos account) =~ Limited ]]; then
             green "WARP+账户启用成功"
         else
@@ -514,9 +430,9 @@ install_warpcli(){
     
     read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
     [[ -z $WARPCliPort ]] && WARPCliPort=40000
-    if [[ -n $(netstat -ntlp | grep "$WARPCliPort") ]]; then
-        until [[ -z $(netstat -ntlp | grep "$WARPCliPort") ]]; do
-            if [[ -n $(netstat -ntlp | grep "$WARPCliPort") ]]; then
+    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
+            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
                 read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
             fi
@@ -527,40 +443,84 @@ install_warpcli(){
     yellow "正在启动Warp-Cli代理模式"
     warp-cli --accept-tos connect >/dev/null 2>&1
     warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+    WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+    WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
     sleep 5
+    retry_time=0
+    until [[ $WARPCliStatus =~ on|plus ]]; do
+        retry_time=$((${retry_time} + 1))
+        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        sleep 5
+        if [[ $retry_time == 6 ]]; then
+            uninstallCli
+            echo ""
+            red "由于WARP-Cli代理模式启动重试次数过多 ,已自动卸载WARP-Cli代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+    done
+
     socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
     green "WARP-Cli代理模式已启动成功!"
     yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
     yellow "WARP-Cli代理模式的IP为: $socks5IP"
 }
 
-change_warpcli_port() {
+warpcli_changeport() {
     if [[ $(warp-cli --accept-tos status) =~ Connected ]]; then
         warp-cli --accept-tos disconnect >/dev/null 2>&1
     fi
-
+    
     read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
     [[ -z $WARPCliPort ]] && WARPCliPort=40000
-    if [[ -n $(netstat -ntlp | grep "$WARPCliPort") ]]; then
-        until [[ -z $(netstat -ntlp | grep "$WARPCliPort") ]]; do
-            if [[ -n $(netstat -ntlp | grep "$WARPCliPort") ]]; then
+    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
+            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
                 read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
             fi
         done
     fi
-
     warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
+    
     yellow "正在启动Warp-Cli代理模式"
     warp-cli --accept-tos connect >/dev/null 2>&1
     warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+    WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+    WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+    sleep 5
+    retry_time=0
+    until [[ $WARPCliStatus =~ on|plus ]]; do
+        retry_time=$((${retry_time} + 1))
+        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        sleep 5
+        if [[ $retry_time == 6 ]]; then
+            uninstallCli
+            echo ""
+            red "由于WARP-Cli代理模式启动重试次数过多 ,已自动卸载WARP-Cli代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+    done
     socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
     green "WARP-Cli代理模式已启动成功并成功修改代理端口！"
     yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
     yellow "WARP-Cli代理模式的IP为: $socks5IP"
 }
 
-warpcli_switch(){
+switchCli(){
     if [[ $(warp-cli --accept-tos status) =~ Connected ]]; then
         warp-cli --accept-tos disconnect >/dev/null 2>&1
         green "WARP-Cli代理模式关闭成功! "
@@ -583,7 +543,7 @@ warpcli_switch(){
     fi
 }
 
-uninstall_warpcli(){
+uninstallCli(){
     warp-cli --accept-tos disconnect >/dev/null 2>&1
     warp-cli --accept-tos disable-always-on >/dev/null 2>&1
     warp-cli --accept-tos delete >/dev/null 2>&1
@@ -592,27 +552,7 @@ uninstall_warpcli(){
     green "WARP-Cli代理模式已彻底卸载成功!"
 }
 
-wireproxyFailAction(){
-    retry_time=$((${retry_time} + 1))
-    red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
-    systemctl stop wireproxy-warp
-    systemctl start wireproxy-warp
-    WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-    if [[ $retry_time == 6 ]]; then
-        uninstall_wireproxy
-        echo ""
-        red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
-        green "建议如下："
-        yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
-        yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
-        yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用WireProxy-WARP 代理模式"
-        yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
-        exit 1
-    fi
-    sleep 8
-}
-
-install_wireproxy(){
+installWireProxy(){
     if [[ $c4 == "Hong Kong" || $c6 == "Hong Kong" ]]; then
         red "检测到地区为 Hong Kong 的VPS!"
         yellow "由于 CloudFlare 对 Hong Kong 屏蔽了 Wgcf, 因此无法使用 WireProxy-WARP 代理模式。请使用其他地区的VPS"
@@ -641,7 +581,7 @@ install_wireproxy(){
     fi
     
     until [[ -a wgcf-account.toml ]]; do
-        yellow "正在向CloudFlare WARP申请账号, 如提示429 Too Many Requests错误请耐心等待即可"
+        yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
         yes | wgcf register
         sleep 5
     done
@@ -649,13 +589,13 @@ install_wireproxy(){
     
     if [[ ! $wgcfFile == 1 ]]; then
         yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-        read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-        if [[ -n $WPPlusKey ]]; then
-            sed -i "s/license_key.*/license_key = \"$WPPlusKey\"/g" wgcf-account.toml
-            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " WPPlusName
+        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+        if [[ -n $warpkey ]]; then
+            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
+            read -rp "请输入自定义设备名，如未输入则使用随机设备名: " warpname
             green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $WPPlusName ]]; then
-                wgcf update --name $(echo $WPPlusName | sed s/[[:space:]]/_/g)
+            if [[ -n $warpname ]]; then
+                wgcf update --name $(echo $warpname | sed s/[[:space:]]/_/g)
             else
                 wgcf update
             fi
@@ -678,9 +618,9 @@ install_wireproxy(){
     
     read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
     [[ -z $WireProxyPort ]] && WireProxyPort=40000
-    if [[ -n $(netstat -ntlp | grep "$WireProxyPort") ]]; then
-        until [[ -z $(netstat -ntlp | grep "$WireProxyPort") ]]; do
-            if [[ -n $(netstat -ntlp | grep "$WireProxyPort") ]]; then
+    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
+        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; do
+            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
                 read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
             fi
@@ -704,11 +644,9 @@ Address = 172.16.0.2/32
 MTU = $MTU
 PrivateKey = $WgcfPrivateKey
 DNS = 1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
-
 [Peer]
 PublicKey = $WgcfPublicKey
 Endpoint = $WireproxyEndpoint
-
 [Socks5]
 BindAddress = 127.0.0.1:$WireProxyPort
 EOF
@@ -732,9 +670,25 @@ TEXT
     yellow "正在启动 WireProxy-WARP 代理模式"
     systemctl start wireproxy-warp
     WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-    retry_time=1
+    retry_time=0
     until [[ $WireProxyStatus =~ on|plus ]]; do
-        wireproxyFailAction
+        retry_time=$((${retry_time} + 1))
+        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
+        systemctl stop wireproxy-warp
+        systemctl start wireproxy-warp
+        WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        if [[ $retry_time == 6 ]]; then
+            uninstallWireProxy
+            echo ""
+            red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用WireProxy-WARP 代理模式"
+            yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+        sleep 8
     done
     sleep 5
     systemctl enable wireproxy-warp >/dev/null 2>&1
@@ -744,7 +698,7 @@ TEXT
     yellow "WireProxy-WARP代理模式的IP为: $socks5IP"
 }
 
-change_wireproxy_port(){
+wireproxy_changeport(){
     systemctl stop wireproxy-warp
     read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
     [[ -z $WireProxyPort ]] && WireProxyPort=40000
@@ -770,7 +724,7 @@ change_wireproxy_port(){
     yellow "本地Socks5代理为: 127.0.0.1:$WireProxyPort"
 }
 
-wireproxy_switch(){
+switchWireproxy(){
     w5p=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
     w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
     if [[ $w5s =~ "on"|"plus" ]]; then
@@ -785,7 +739,7 @@ wireproxy_switch(){
     fi
 }
 
-uninstall_wireproxy(){
+uninstallWireProxy(){
     systemctl stop wireproxy-warp
     systemctl disable wireproxy-warp
     rm -f /etc/systemd/system/wireproxy-warp.service /usr/local/bin/wireproxy /etc/wireguard/proxy.conf
@@ -1130,22 +1084,58 @@ warpnf(){
     esac
 }
 
-menu(){
-    check_status
-    [[ $VPSIP == 0 ]] && menu0
-    [[ $VPSIP == 1 ]] && menu1
-    [[ $VPSIP == 2 ]] && menu2
-}
+showIP(){
+    v4=$(curl -s4m8 https://ip.gs -k)
+    v6=$(curl -s6m8 https://ip.gs -k)
+    c4=$(curl -s4m8 https://ip.gs/country -k)
+    c6=$(curl -s6m8 https://ip.gs/country -k)
+    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    w6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    n6=$(curl -6 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    s5p=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+    w5p=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
+    if [[ -n $s5p ]]; then
+        s5s=$(curl -sx socks5h://localhost:$s5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        s5i=$(curl -sx socks5h://localhost:$s5p https://ip.gs -k --connect-timeout 8)
+        s5c=$(curl -sx socks5h://localhost:$s5p https://ip.gs/country -k --connect-timeout 8)
+        s5n=$(curl -sx socks5h://localhost:$s5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
+    if [[ -n $w5p ]]; then
+        w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        w5i=$(curl -sx socks5h://localhost:$w5p https://ip.gs -k --connect-timeout 8)
+        w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
+        w5n=$(curl -sx socks5h://localhost:$w5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
+    
+    [[ -z $s5s ]] || [[ $s5s == "off" ]] && s5="${RED}未启动${PLAIN}"
+    [[ -z $w5s ]] || [[ $w5s == "off" ]] && w5="${RED}未启动${PLAIN}"
+    [[ $s5s == "on" ]] && s5="${YELLOW}WARP 免费账户${PLAIN}"
+    [[ $w5s == "on" ]] && w5="${YELLOW}WARP 免费账户${PLAIN}"
+    [[ $s5s == "plus" ]] && s5="${GREEN}WARP+ / Teams${PLAIN}"
+    [[ $w5s == "plus" ]] && w5="${GREEN}WARP+ / Teams${PLAIN}"
+    [[ $w4 == "off" ]] && w4="${RED}未启用WARP${PLAIN}"
+    [[ $w6 == "off" ]] && w6="${RED}未启用WARP${PLAIN}"
+    [[ $w4 == "on" ]] && w4="${YELLOW}WARP 免费账户${PLAIN}"
+    [[ $w6 == "on" ]] && w6="${YELLOW}WARP 免费账户${PLAIN}"
+    [[ $w4 == "plus" ]] && w4="${GREEN}WARP+ / Teams${PLAIN}"
+    [[ $w6 == "plus" ]] && w6="${GREEN}WARP+ / Teams${PLAIN}"
+    
+    [[ -z $n4 ]] || [[ $n4 == "000" ]] && n4="${RED}无法检测Netflix状态${PLAIN}"
+    [[ -z $n6 ]] || [[ $n6 == "000" ]] && n6="${RED}无法检测Netflix状态${PLAIN}"
+    [[ $n4 == "200" ]] && n4="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $n6 == "200" ]] && n6="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $s5n == "200" ]] && s5n="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $w5n == "200" ]] && w5n="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $n4 == "403" ]] && n4="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $n6 == "403" ]] && n6="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $s5n == "403" ]]&& s5n="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $w5n == "403" ]]&& w5n="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $n4 == "404" ]] && n4="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $n6 == "404" ]] && n6="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $s5n == "404" ]] && s5n="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $w5n == "404" ]] && w5n="${YELLOW}Netflix 自制剧${PLAIN}"
 
-info_bar(){
-    echo "#############################################################"
-    echo -e "#                    ${RED} WARP  一键安装脚本${PLAIN}                    #"
-    echo -e "# ${GREEN}作者${PLAIN}: taffychan                                           #"
-    echo -e "# ${GREEN}GitHub${PLAIN}: https://github.com/taffychan                      #"
-    echo "#############################################################"
-}
-
-statustext(){
     if [[ -n $v4 ]]; then
         echo "-------------------------------------------------------------"
         echo -e "IPv4 地址：$v4  地区：$c4"
@@ -1171,133 +1161,60 @@ statustext(){
         fi
     fi
     echo "-------------------------------------------------------------"
-    echo -e ""
 }
 
-choice4d(){
-    read -rp " 请输入选项 [0-16]: " menuInput
-    case "$menuInput" in
-        1 ) wgcfmode=0 && install_wgcf ;;
-        2 ) wgcfmode=1 && install_wgcf ;;
-        3 ) wgcfmode=2 && install_wgcf ;;
-        4 ) wgcf_switch ;;
-        5 ) uninstall_wgcf ;;
-        6 ) install_warpcli ;;
-        7 ) change_warpcli_port ;;
-        8 ) warpcli_switch ;;
-        9 ) uninstall_warpcli ;;
-        10 ) install_wireproxy ;;
-        11 ) change_wireproxy_port ;;
-        12 ) wireproxy_switch ;;
-        13 ) uninstall_wireproxy ;;
+menu(){
+    clear
+    echo "#############################################################"
+    echo -e "#                    ${RED} WARP  一键安装脚本${PLAIN}                    #"
+    echo -e "# ${GREEN}作者${PLAIN}: taffychan                                           #"
+    echo -e "# ${GREEN}GitHub${PLAIN}: https://github.com/taffychan                      #"
+    echo "#############################################################"
+    echo -e ""
+    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
+    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 双栈模式"
+    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
+    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
+    echo " -------------"
+    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 代理模式 ${RED}(仅支持纯IPv4或原生双栈、CPU架构为AMD64的VPS)${PLAIN}"
+    echo -e " ${GREEN}7.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
+    echo -e " ${GREEN}8.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
+    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli 代理模式${PLAIN}"
+    echo " -------------"
+    echo -e " ${GREEN}10.${PLAIN} 安装 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}11.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
+    echo -e " ${GREEN}12.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}13.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
+    echo " -------------"
+    echo -e " ${GREEN}14.${PLAIN} 获取 WARP+ 账户流量"
+    echo -e " ${GREEN}15.${PLAIN} 切换 WARP 账户类型"
+    echo -e " ${GREEN}16.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo " -------------"
+    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e ""
+    showIP
+    echo -e ""
+    read -rp "请输入选项 [0-16]：" menuChoice
+    case $menuChoice in
+        1) wgcfmode=4 && installWgcf ;;
+        2) wgcfmode=6 && installWgcf ;;
+        3) wgcfmode=5 && installWgcf ;;
+        4) switchWgcf ;;
+        5) uninstallWgcf ;;
+        6) warpcli=1 && installCli ;;
+        7) warpcli_changeport ;;
+        8) switchCli ;;
+        9) uninstallCli ;;
+        10) installWireProxy ;;
+        11) wireproxy_changeport ;;
+        12) switchWireProxy ;;
+        13) uninstallWireProxy ;;
         14 ) warpup ;;
         15 ) warpsw ;;
         16 ) warpnf ;;
-        * ) exit 1 ;;
+        *) red "请输入正确的选项！" && exit 1 ;;
     esac
-}
-
-menu0(){
-    clear
-    info_bar
-    echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv4 + 原生 IPv6)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 双栈模式 ${YELLOW}(WARP IPV4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}6.${PLAIN} 安装 Wireproxy-WARP 代理模式 ${YELLOW}(Socks5 WARP)${PLAIN}"
-    echo -e " ${GREEN}7.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
-    echo -e " ${GREEN}8.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}10.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}11.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}12.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo " -------------"
-    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
-    echo -e ""
-    echo -e "VPS IP特征：${RED}纯IPv6的VPS${PLAIN}"
-    statustext
-    read -rp " 请输入选项 [0-12]: " menu0Input
-    case "$menu0Input" in
-        1 ) wgcfmode=0 && install_wgcf ;;
-        2 ) wgcfmode=1 && install_wgcf ;;
-        3 ) wgcfmode=2 && install_wgcf ;;
-        4 ) wgcf_switch ;;
-        5 ) uninstall_wgcf ;;
-        6 ) install_wireproxy ;;
-        7 ) change_wireproxy_port ;;
-        8 ) wireproxy_switch ;;
-        9 ) uninstall_wireproxy ;;
-        10 ) warpup ;;
-        11 ) warpsw ;;
-        12 ) warpnf ;;
-        * ) exit 1 ;;
-    esac
-}
-
-menu1(){
-    clear
-    info_bar
-    echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(原生 IPv4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 双栈模式 ${YELLOW}(WARP IPV4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 代理模式 ${YELLOW}(Socks5 WARP)${PLAIN} ${RED}(仅支持CPU架构为AMD64的VPS)${PLAIN}"
-    echo -e " ${GREEN}7.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}8.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}10.${PLAIN} 安装 Wireproxy-WARP 代理模式 ${YELLOW}(Socks5 WARP)${PLAIN}"
-    echo -e " ${GREEN}11.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
-    echo -e " ${GREEN}12.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}13.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}14.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}15.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}16.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo " -------------"
-    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
-    echo -e ""
-    echo -e "VPS IP特征：${RED}纯IPv4的VPS${PLAIN}"
-    statustext
-    choice4d
-}
-
-menu2(){
-    clear
-    info_bar
-    echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv4 + 原生 IPv6)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(原生 IPv4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 双栈模式 ${YELLOW}(WARP IPV4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 代理模式 ${YELLOW}(Socks5 WARP)${PLAIN} ${RED}(仅支持CPU架构为AMD64的VPS)${PLAIN}"
-    echo -e " ${GREEN}7.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}8.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}10.${PLAIN} 安装 Wireproxy-WARP 代理模式 ${YELLOW}(Socks5 WARP)${PLAIN}"
-    echo -e " ${GREEN}11.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
-    echo -e " ${GREEN}12.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}13.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}14.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}15.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}16.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo " -------------"
-    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
-    echo -e ""
-    echo -e "VPS IP特征：${RED}原生IP双栈的VPS${PLAIN}"
-    statustext
-    choice4d
 }
 
 menu
