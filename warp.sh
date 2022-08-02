@@ -468,8 +468,8 @@ installCli(){
 
     socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
     green "WARP-Cli代理模式已启动成功!"
-    yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
-    yellow "WARP-Cli代理模式的IP为: $socks5IP"
+    echo ""
+    showIP
 }
 
 warpcli_changeport() {
@@ -516,8 +516,8 @@ warpcli_changeport() {
     done
     socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
     green "WARP-Cli代理模式已启动成功并成功修改代理端口！"
-    yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
-    yellow "WARP-Cli代理模式的IP为: $socks5IP"
+    echo ""
+    showIP
 }
 
 switchCli(){
@@ -538,7 +538,6 @@ switchCli(){
         warp-cli --accept-tos enable-always-on >/dev/null 2>&1
         WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
         green "WARP-Cli代理模式启动成功! "
-        yellow "本地Socks5代理为: 127.0.0.1:$WARPCliPort"
         exit 1
     fi
 }
@@ -610,10 +609,10 @@ installWireProxy(){
     
     if [[ $IPv4Status =~ "on"|"plus" ]] || [[ $IPv6Status =~ "on"|"plus" ]]; then
         wg-quick down wgcf >/dev/null 2>&1
-        check_best_mtu
+        checkMTU
         wg-quick up wgcf >/dev/null 2>&1
     else
-        check_best_mtu
+        checkMTU
     fi
     
     read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
@@ -694,8 +693,8 @@ TEXT
     systemctl enable wireproxy-warp >/dev/null 2>&1
     socks5IP=$(curl -sx socks5h://localhost:$WireProxyPort https://ip.gs -k --connect-timeout 8)
     green "WireProxy-WARP代理模式已启动成功!"
-    yellow "本地Socks5代理为:  127.0.0.1:$WireProxyPort"
-    yellow "WireProxy-WARP代理模式的IP为: $socks5IP"
+    echo ""
+    showIP
 }
 
 wireproxy_changeport(){
@@ -715,13 +714,30 @@ wireproxy_changeport(){
     yellow "正在启动 WireProxy-WARP 代理模式"
     systemctl start wireproxy-warp
     WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-    retry_time=1
+    retry_time=0
     until [[ $WireProxyStatus =~ on|plus ]]; do
-        wireproxyFailAction
+        retry_time=$((${retry_time} + 1))
+        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
+        systemctl stop wireproxy-warp
+        systemctl start wireproxy-warp
+        WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        if [[ $retry_time == 6 ]]; then
+            uninstallWireProxy
+            echo ""
+            red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用WireProxy-WARP 代理模式"
+            yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+        sleep 8
     done
     systemctl enable wireproxy-warp
-    green "WireProxy-WARP代理模式已启动成功！"
-    yellow "本地Socks5代理为: 127.0.0.1:$WireProxyPort"
+    green "WireProxy-WARP代理模式已启动成功并已修改端口！"
+    echo ""
+    showIP
 }
 
 switchWireproxy(){
