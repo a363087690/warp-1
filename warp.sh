@@ -363,14 +363,14 @@ install_wgcf(){
     fi
     
     until [[ -a wgcf-account.toml ]]; do
-        yellow "正在向CloudFlare WARP申请账号, 如提示429 Too Many Requests错误请耐心等待即可"
+        yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
         yes | wgcf register
         sleep 5
     done
     chmod +x wgcf-account.toml
     
     if [[ ! $wgcfFile == 1 ]]; then
-        yellow "使用WARP免费版账户请按回车跳过 \n如需启用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
+        yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
         read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
         if [[ -n $WPPlusKey ]]; then
             sed -i "s/license_key.*/license_key = \"$WPPlusKey\"/g" wgcf-account.toml
@@ -500,7 +500,7 @@ install_warpcli(){
     fi
     
     warp-cli --accept-tos register >/dev/null 2>&1
-    yellow "使用WARP免费版账户请按回车跳过 \n启用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
+    yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
     read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
     if [[ -n $WPPlusKey ]]; then
         warp-cli --accept-tos set-license "$WPPlusKey" >/dev/null 2>&1 && sleep 1
@@ -648,7 +648,7 @@ install_wireproxy(){
     chmod +x wgcf-account.toml
     
     if [[ ! $wgcfFile == 1 ]]; then
-        yellow "使用WARP免费版账户请按回车跳过 \n如需启用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
+        yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
         read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
         if [[ -n $WPPlusKey ]]; then
             sed -i "s/license_key.*/license_key = \"$WPPlusKey\"/g" wgcf-account.toml
