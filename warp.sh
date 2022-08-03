@@ -971,21 +971,16 @@ warpsw3(){
     read -rp "请选择账户类型 [1-3]: " accountInput
     if [[ $accountInput == 1 ]]; then
         systemctl stop wireproxy-warp
-        
         cd /etc/wireguard
         rm -f wgcf-account.toml
-        
         until [[ -a wgcf-account.toml ]]; do
             yes | wgcf register
             sleep 5
         done
         chmod +x wgcf-account.toml
-        
         wgcf generate
         chmod +x wgcf-profile.conf
-        
         warpsw3_freeplus
-        
         systemctl start wireproxy-warp
         yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
         WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
@@ -1004,7 +999,6 @@ warpsw3(){
             done
         fi
         chmod +x wgcf-account.toml
-        
         read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
         if [[ -n $WPPlusKey ]]; then
             read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " WPPlusName
@@ -1014,14 +1008,10 @@ warpsw3(){
             else
                 wgcf update
             fi
-            
             wgcf generate
-            chmod +x wgcf-profile.conf
-            
+            chmod +x wgcf-profile.conf 
             systemctl stop wireproxy-warp
-            
             warpsw3_freeplus
-            
             systemctl start wireproxy-warp
             yellow "正在检查WARP+账户连通性，请稍等..." && sleep 5
             WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
@@ -1050,16 +1040,12 @@ warpsw3(){
             until [[ $WireProxyStatus == "plus" ]]; do
                 red "无法联通WARP Teams账户, 正在尝试重启, 重试次数：$retry_time"
                 retry_time=$((${retry_time} + 1))
-                
                 if [[ $retry_time == 4 ]]; then
                     systemctl stop wireproxy-warp
-                    
                     cd /etc/wireguard
                     wgcf generate
                     chmod +x wgcf-profile.conf
-                    
                     warpsw3_freeplus
-                    
                     systemctl start wireproxy-warp
                     red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
                 fi
