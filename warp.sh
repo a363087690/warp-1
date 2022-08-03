@@ -52,7 +52,7 @@ wg1="sed -i '/0\.0\.0\.0\/0/d' wgcf-profile.conf"
 wg2="sed -i '/\:\:\/0/d' wgcf-profile.conf"
 # Wgcf Endpoint
 wg3="sed -i 's/engage.cloudflareclient.com/162.159.193.10/g' wgcf-profile.conf"
-wg4="sed -i 's/engage.cloudflareclient.com/2606:4700:d0::a29f:c001/g' wgcf-profile.conf"
+wg4="sed -i 's/engage.cloudflareclient.com/[2606:4700:d0::a29f:c001]/g' wgcf-profile.conf"
 # Wgcf DNS Servers
 wg5="sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844/g' wgcf-profile.conf"
 wg6="sed -i 's/1.1.1.1/2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' wgcf-profile.conf"
