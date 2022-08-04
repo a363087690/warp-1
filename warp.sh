@@ -1038,7 +1038,7 @@ warpsw3(){
 warpsw(){
     yellow "请选择需要切换WARP账户的WARP客户端:"
     echo -e " ${GREEN}1.${PLAIN} Wgcf-WARP"
-    echo -e " ${GREEN}2.${PLAIN} WARP-Cli 代理模式 ${RED}(目前仅支持升级WARP+账户)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} WARP-Cli ${RED}(目前仅支持升级WARP+账户)${PLAIN}"
     echo -e " ${GREEN}3.${PLAIN} WireProxy-WARP 代理模式"
     read -rp "请选择客户端 [1-3]: " clientInput
     case "$clientInput" in
