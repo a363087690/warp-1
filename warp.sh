@@ -144,20 +144,20 @@ checkStatus(){
 
     if [[ -n $v44 && -z $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4)"
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
             wgcf1=$wg5
             wgcf2=$wg7
             wgcf3=$wg2
             wgcf4=$wg3
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP单栈模式 (原生 IPv4 + WARP IPv6)"
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg1
             wgcf3=$wg3
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg7
             wgcf3=$wg3
@@ -168,20 +168,20 @@ checkStatus(){
     fi
     if [[ -z $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4 + 原生 IPv6)"
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg6
             wgcf2=$wg2
             wgcf3=$wg4
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv6)"
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
             wgcf1=$wg6
             wgcf2=$wg8
             wgcf3=$wg1
             wgcf4=$wg4
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6
             wgcf2=$wg2
             wgcf3=$wg4
@@ -193,19 +193,19 @@ checkStatus(){
     fi
     if [[ -n $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP单栈模式 (WARP IPv4 + 原生 IPv6)"
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
             wgcf3=$wg2
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP单栈模式 (原生 IPv4 + WARP IPv6)"
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
             wgcf3=$wg1
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
         fi
@@ -1151,9 +1151,9 @@ menu(){
     echo -e "# ${GREEN}GitHub${PLAIN}: https://github.com/taffychan                      #"
     echo "#############################################################"
     echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 双栈模式"
+    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
+    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 全局双栈模式"
     echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
     echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
     echo " -------------"
