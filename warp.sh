@@ -1160,7 +1160,7 @@ menu(){
     echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 代理模式 ${RED}(仅支持纯IPv4或原生双栈、CPU架构为AMD64的VPS)${PLAIN}"
     echo -e " ${GREEN}7.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
     echo -e " ${GREEN}8.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli 代理模式${PLAIN}"
+    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
     echo " -------------"
     echo -e " ${GREEN}10.${PLAIN} 安装 Wireproxy-WARP 代理模式"
     echo -e " ${GREEN}11.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
