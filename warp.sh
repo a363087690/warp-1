@@ -57,9 +57,9 @@ wg4="sed -i 's/engage.cloudflareclient.com/[2606:4700:d0::a29f:c001]/g' wgcf-pro
 wg5="sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844/g' wgcf-profile.conf"
 wg6="sed -i 's/1.1.1.1/2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' wgcf-profile.conf"
 # Wgcf 允许外部IP地址
-wg7='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
-wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
-wg9='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 162.159.192.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:d0::a29f:c001 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+wg7='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
+wg9='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" wgcf-profile.conf'
 
 if [[ -z $(type -P curl) ]]; then
     if [[ ! $SYSTEM == "CentOS" ]]; then
@@ -141,7 +141,7 @@ checkStatus(){
         v66=$(curl -s6m8 https://ip.gs -k)
         v44=$(curl -s4m8 https://ip.gs -k)
     fi
-
+    
     if [[ -n $v44 && -z $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
             yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
@@ -164,6 +164,9 @@ checkStatus(){
         fi
         if [[ $warpcli == 1 ]]; then
             yellow "检测到为纯IPv4的VPS，正在安装WARP-Cli代理模式"
+        fi
+        if [[ $warpcli == 2 ]]; then
+            yellow "检测到为纯IPv4的VPS，正在安装WARP-Cli全局模式"
         fi
     fi
     if [[ -z $v44 && -n $v66 ]]; then
@@ -190,6 +193,10 @@ checkStatus(){
             yellow "检测到为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli代理模式"
             exit 1
         fi
+        if [[ $warpcli == 2 ]]; then
+            yellow "检测到为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli全局模式"
+            exit 1
+        fi
     fi
     if [[ -n $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
@@ -212,6 +219,9 @@ checkStatus(){
         if [[ $warpcli == 1 ]]; then
             yellow "检测到为原生双栈的VPS，正在安装WARP-Cli代理模式"
         fi
+        if [[ $warpcli == 2 ]]; then
+            yellow "检测到为原生双栈的VPS，正在安装WARP-Cli全局模式"
+        fi
     fi
     sleep 2
 }
@@ -219,12 +229,12 @@ checkStatus(){
 installWgcf(){
     checkStatus
     checkTun
-
+    
     [[ $SYSTEM == "CentOS" ]] && [[ ${OSID} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
     [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 16 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
-
+    
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
@@ -260,7 +270,7 @@ installWgcf(){
     
     wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
-
+    
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
         cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
         wgcfFile=1
@@ -293,7 +303,7 @@ installWgcf(){
     
     wgcf generate
     chmod +x wgcf-profile.conf
-
+    
     echo $wgcf1 | sh
     echo $wgcf2 | sh
     echo $wgcf3 | sh
@@ -309,7 +319,7 @@ installWgcf(){
     
     mv -f wgcf-profile.conf /etc/wireguard/wgcf.conf
     mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml
-
+    
     yellow "正在启动 Wgcf-WARP"
     wg-quick up wgcf >/dev/null 2>&1
     
@@ -426,50 +436,82 @@ installCli(){
             red "WARP+账户启用失败, 即将使用WARP免费版账户"
         fi
     fi
-    warp-cli --accept-tos set-mode proxy >/dev/null 2>&1
     
-    read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
-    [[ -z $WARPCliPort ]] && WARPCliPort=40000
-    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
-        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
-            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
-                yellow "你设置的端口目前已被占用，请重新输入端口"
-                read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
-            fi
-        done
-    fi
-    warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
-    
-    yellow "正在启动Warp-Cli代理模式"
-    warp-cli --accept-tos connect >/dev/null 2>&1
-    warp-cli --accept-tos enable-always-on >/dev/null 2>&1
-    WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
-    WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-    sleep 5
-    retry_time=0
-    until [[ $WARPCliStatus =~ on|plus ]]; do
-        retry_time=$((${retry_time} + 1))
-        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
-        warp-cli --accept-tos disconnect >/dev/null 2>&1
+    if [[ $warpcli == 1 ]]; then
+        read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+        [[ -z $WARPCliPort ]] && WARPCliPort=$(shuf -i 1000-65535 -n 1)
+        if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+            until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
+                if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+                    yellow "你设置的端口目前已被占用，请重新输入端口"
+                    read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+                fi
+            done
+        fi
+        yellow "正在启动Warp-Cli代理模式"
+        warp-cli --accept-tos set-mode proxy >/dev/null 2>&1
+        warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
         warp-cli --accept-tos connect >/dev/null 2>&1
-        WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        sleep 5
-        if [[ $retry_time == 6 ]]; then
+        warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+        sleep 2
+        if [[ ! $(ss -nltp) =~ 'warp-svc' ]]; then
             uninstallCli
-            echo ""
-            red "由于WARP-Cli代理模式启动重试次数过多 ,已自动卸载WARP-Cli代理模式"
+            red "由于WARP-Cli代理模式安装失败 ,已自动卸载WARP-Cli代理模式"
             green "建议如下："
             yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
             yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
             yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
-            exit 1
+        else
+            green "WARP-Cli代理模式已启动成功!"
+            echo ""
+            showIP
         fi
-    done
-
-    socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
-    green "WARP-Cli代理模式已启动成功!"
-    echo ""
-    showIP
+    fi
+    
+    if [[ $warpcli == 2 ]]; then
+        yellow "正在启动 WARP-Cli 全局模式"
+        warp-cli --accept-tos add-excluded-route 0.0.0.0/0 >/dev/null 2>&1
+        warp-cli --accept-tos add-excluded-route ::0/0 >/dev/null 2>&1
+        warp-cli --accept-tos set-mode warp >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+        sleep 5
+        ip -4 rule add from 172.16.0.2 lookup 51820
+        ip -4 route add default dev CloudflareWARP table 51820
+        ip -4 rule add table main suppress_prefixlength 0
+        IPv4=$(curl -ks4m8 https://ip.gs/json --interface CloudflareWARP)
+        retry_time=0
+        until [[ -n $IPv4 ]]; do
+            retry_time=$((${retry_time} + 1))
+            red "启动 WARP-Cli 全局模式失败，正在尝试重启，重试次数：$retry_time"
+            warp-cli --accept-tos disconnect >/dev/null 2>&1
+            warp-cli --accept-tos disable-always-on >/dev/null 2>&1
+            ip -4 rule delete from 172.16.0.2 lookup 51820
+            ip -4 rule delete table main suppress_prefixlength 0
+            sleep 2
+            warp-cli --accept-tos connect >/dev/null 2>&1
+            warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+            sleep 5
+            ip -4 rule add from 172.16.0.2 lookup 51820
+            ip -4 route add default dev CloudflareWARP table 51820
+            ip -4 rule add table main suppress_prefixlength 0
+            if [[ $retry_time == 6 ]]; then
+                warp-cli --accept-tos disconnect >/dev/null 2>&1
+                warp-cli --accept-tos disable-always-on >/dev/null 2>&1
+                ip -4 rule delete from 172.16.0.2 lookup 51820
+                ip -4 rule delete table main suppress_prefixlength 0
+                uninstallCli
+                red "由于WARP-Cli全局模式启动重试次数过多 ,已自动卸载WARP-Cli全局模式"
+                green "建议如下："
+                yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+                yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+                yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            fi
+        done
+        green "WARP-Cli全局模式已安装成功！"
+        echo ""
+        showIP
+    fi
 }
 
 warpcli_changeport() {
@@ -477,13 +519,13 @@ warpcli_changeport() {
         warp-cli --accept-tos disconnect >/dev/null 2>&1
     fi
     
-    read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
-    [[ -z $WARPCliPort ]] && WARPCliPort=40000
+    read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+    [[ -z $WARPCliPort ]] && WARPCliPort=$(shuf -i 1000-65535 -n 1)
     if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
         until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
             if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
-                read -rp "请输入WARP-Cli使用的代理端口 (默认40000): " WARPCliPort
+                read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
             fi
         done
     fi
@@ -492,32 +534,15 @@ warpcli_changeport() {
     yellow "正在启动Warp-Cli代理模式"
     warp-cli --accept-tos connect >/dev/null 2>&1
     warp-cli --accept-tos enable-always-on >/dev/null 2>&1
-    WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
-    WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-    sleep 5
-    retry_time=0
-    until [[ $WARPCliStatus =~ on|plus ]]; do
-        retry_time=$((${retry_time} + 1))
-        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
-        warp-cli --accept-tos disconnect >/dev/null 2>&1
-        warp-cli --accept-tos connect >/dev/null 2>&1
-        WARPCliStatus=$(curl -sx socks5h://localhost:$WARPCliPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        sleep 5
-        if [[ $retry_time == 6 ]]; then
-            uninstallCli
-            echo ""
-            red "由于WARP-Cli代理模式启动重试次数过多 ,已自动卸载WARP-Cli代理模式"
-            green "建议如下："
-            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
-            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
-            yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
-            exit 1
-        fi
-    done
-    socks5IP=$(curl -sx socks5h://localhost:$WARPCliPort ip.gs -k --connect-timeout 8)
-    green "WARP-Cli代理模式已启动成功并成功修改代理端口！"
-    echo ""
-    showIP
+    
+    if [[ ! $(ss -nltp) =~ 'warp-svc' ]]; then
+        red "WARP-Cli代理模式启动失败！"
+        uninstallCli
+    else
+        green "WARP-Cli代理模式已启动成功并成功修改代理端口！"
+        echo ""
+        showIP
+    fi
 }
 
 switchCli(){
@@ -615,13 +640,13 @@ installWireProxy(){
         checkMTU
     fi
     
-    read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
-    [[ -z $WireProxyPort ]] && WireProxyPort=40000
+    read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
+    [[ -z $WireProxyPort ]] && WireProxyPort=$(shuf -i 1000-65535 -n 1)
     if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
         until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; do
             if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
-                read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
+                read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
             fi
         done
     fi
@@ -634,8 +659,23 @@ installWireProxy(){
         chmod -R 777 /etc/wireguard
     fi
     
-    [[ $VPSIP == 0 ]] && WireproxyEndpoint="[2606:4700:d0::a29f:c001]:2408"
-    [[ $VPSIP == 1 || $VPSIP == 2 ]] && WireproxyEndpoint="162.159.193.10:2408"
+    IPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ $IPv4Status =~ on|plus ]] || [[ $IPv6Status =~ on|plus ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
+        wg-quick up wgcf >/dev/null 2>&1
+    else
+        v66=$(curl -s6m8 https://ip.gs -k)
+        v44=$(curl -s4m8 https://ip.gs -k)
+    fi
+    
+    if [[ -z $v44 && -n $v66 ]]; then
+        WireproxyEndpoint="[2606:4700:d0::a29f:c001]:2408"
+    else
+        WireproxyEndpoint="162.159.193.10:2408"
+    fi
     
     cat <<EOF > /etc/wireguard/proxy.conf
 [Interface]
@@ -691,7 +731,6 @@ TEXT
     done
     sleep 5
     systemctl enable wireproxy-warp >/dev/null 2>&1
-    socks5IP=$(curl -sx socks5h://localhost:$WireProxyPort https://ip.gs -k --connect-timeout 8)
     green "WireProxy-WARP代理模式已启动成功!"
     echo ""
     showIP
@@ -699,13 +738,13 @@ TEXT
 
 wireproxy_changeport(){
     systemctl stop wireproxy-warp
-    read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
-    [[ -z $WireProxyPort ]] && WireProxyPort=40000
+    read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
+    [[ -z $WireProxyPort ]] && WireProxyPort=$(shuf -i 1000-65535 -n 1)
     if [[ -n $(netstat -ntlp | grep "$WireProxyPort") ]]; then
         until [[ -z $(netstat -ntlp | grep "$WireProxyPort") ]]; do
             if [[ -n $(netstat -ntlp | grep "$WireProxyPort") ]]; then
                 yellow "你设置的端口目前已被占用，请重新输入端口"
-                read -rp "请输入WireProxy-WARP使用的代理端口 (默认40000): " WireProxyPort
+                read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
             fi
         done
     fi
@@ -989,7 +1028,7 @@ warpsw3(){
                 wgcf update
             fi
             wgcf generate
-            chmod +x wgcf-profile.conf 
+            chmod +x wgcf-profile.conf
             systemctl stop wireproxy-warp
             warpsw3_freeplus
             systemctl start wireproxy-warp
@@ -1065,14 +1104,23 @@ warpnf(){
 }
 
 showIP(){
-    v4=$(curl -s4m8 https://ip.gs -k)
+    if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
+        INTERFACE='--interface CloudflareWARP'
+    fi
+    Browser_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+    v4=$(curl -s4m8 https://ip.gs -k $INTERFACE)
     v6=$(curl -s6m8 https://ip.gs -k)
-    c4=$(curl -s4m8 https://ip.gs/country -k)
+    c4=$(curl -s4m8 https://ip.gs/country -k $INTERFACE)
     c6=$(curl -s6m8 https://ip.gs/country -k)
-    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k $INTERFACE | grep warp | cut -d= -f2)
     w6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    if [[ -n $INTERFACE ]]; then
+        n4=$(curl --user-agent "${Browser_UA}" $INTERFACE -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/$81215567" 2>&1)
+    else
+        n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
     n6=$(curl -6 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    
     s5p=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
     w5p=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
     if [[ -n $s5p ]]; then
@@ -1115,7 +1163,7 @@ showIP(){
     [[ $n6 == "404" ]] && n6="${YELLOW}Netflix 自制剧${PLAIN}"
     [[ $s5n == "404" ]] && s5n="${YELLOW}Netflix 自制剧${PLAIN}"
     [[ $w5n == "404" ]] && w5n="${YELLOW}Netflix 自制剧${PLAIN}"
-
+    
     if [[ -n $v4 ]]; then
         echo "-------------------------------------------------------------"
         echo -e "IPv4 地址：$v4  地区：$c4"
@@ -1128,14 +1176,14 @@ showIP(){
     fi
     if [[ -n $s5p ]]; then
         echo "-------------------------------------------------------------"
-        echo -e "WARP-Cli代理端口: 127.0.0.1:$s5p  WARP-Cli状态: $s5"
+        echo -e "WARP-Cli代理端口: 127.0.0.1:$s5p  状态: $s5"
         if [[ -n $s5i ]]; then
             echo -e "IP: $s5i  地区: $s5c  Netfilx解锁状态：$s5n"
         fi
     fi
     if [[ -n $w5p ]]; then
         echo "-------------------------------------------------------------"
-        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  WireProxy状态: $w5"
+        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5"
         if [[ -n $w5i ]]; then
             echo -e "IP: $w5i  地区: $w5c  Netfilx解锁状态：$w5n"
         fi
@@ -1157,43 +1205,45 @@ menu(){
     echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
     echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
     echo " -------------"
-    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 代理模式 ${RED}(仅支持纯IPv4或原生双栈、CPU架构为AMD64的VPS)${PLAIN}"
-    echo -e " ${GREEN}7.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}8.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}9.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
+    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
+    echo -e " ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
+    echo -e " ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
+    echo -e " ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
     echo " -------------"
-    echo -e " ${GREEN}10.${PLAIN} 安装 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}11.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
-    echo -e " ${GREEN}12.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}13.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
+    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
+    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
     echo " -------------"
-    echo -e " ${GREEN}14.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}15.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}16.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
+    echo -e " ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
+    echo -e " ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
     echo " -------------"
     echo -e " ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
-    read -rp "请输入选项 [0-16]：" menuChoice
+    read -rp "请输入选项 [0-17]：" menuChoice
     case $menuChoice in
         1) wgcfmode=4 && installWgcf ;;
         2) wgcfmode=6 && installWgcf ;;
         3) wgcfmode=5 && installWgcf ;;
         4) switchWgcf ;;
         5) uninstallWgcf ;;
-        6) warpcli=1 && installCli ;;
-        7) warpcli_changeport ;;
+        6) warpcli=2 && installCli ;;
+        7) warpcli=1 && installCli ;;
+        8) warpcli_changeport ;;
         8) switchCli ;;
-        9) uninstallCli ;;
-        10) installWireProxy ;;
-        11) wireproxy_changeport ;;
-        12) switchWireProxy ;;
-        13) uninstallWireProxy ;;
-        14 ) warpup ;;
-        15 ) warpsw ;;
-        16 ) warpnf ;;
-        *) red "请输入正确的选项！" && exit 1 ;;
+        10) uninstallCli ;;
+        11) installWireProxy ;;
+        12) wireproxy_changeport ;;
+        13) switchWireProxy ;;
+        14) uninstallWireProxy ;;
+        15) warpup ;;
+        16) warpsw ;;
+        17) warpnf ;;
+        *) red "请输入正确的选项 [0-17]！" && exit 1 ;;
     esac
 }
 
