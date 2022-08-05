@@ -186,7 +186,7 @@ checkStatus(){
         if [[ $wgcfmode == 5 ]]; then
             yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6
-            wgcf2=$wg2
+            wgcf2=$wg8
             wgcf3=$wg4
         fi
         if [[ $warpcli == 1 ]]; then
@@ -1234,7 +1234,7 @@ menu(){
         6) warpcli=2 && installCli ;;
         7) warpcli=1 && installCli ;;
         8) warpcli_changeport ;;
-        8) switchCli ;;
+        9) switchCli ;;
         10) uninstallCli ;;
         11) installWireProxy ;;
         12) wireproxy_changeport ;;
