@@ -78,7 +78,7 @@ archAffix(){
 }
 
 checkMTU(){
-    yellow "正在设置MTU最佳值, 请稍等..."
+    yellow "正在检测并设置MTU最佳值, 请稍等..."
     v66=$(curl -s6m8 https://ip.gs -k)
     v44=$(curl -s4m8 https://ip.gs -k)
     MTUy=1500
@@ -115,7 +115,7 @@ checkTun(){
     if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
         if [[ $VIRT == lxc ]]; then
             if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
-                red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
+                red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
                 exit 1
             else
                 return 0
@@ -123,10 +123,22 @@ checkTun(){
         elif [[ $VIRT == "openvz" ]]; then
             wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/tun.sh && bash tun.sh
         else
-            red "检测到未开启TUN模块, 请到VPS厂商的控制面板处开启"
+            red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
             exit 1
         fi
     fi
+}
+
+check_quota(){
+    if [[ "$CHECK_TYPE" = 1 ]]; then
+        QUOTA=$(grep -oP 'Quota: \K\d+' <<< $ACCOUNT)
+    else
+        ACCESS_TOKEN=$(grep 'access_token' /etc/wireguard/wgcf-account.toml | cut -d \' -f2)
+        DEVICE_ID=$(grep 'device_id' /etc/wireguard/wgcf-account.toml | cut -d \' -f2)
+        API=$(curl -s "https://api.cloudflareclient.com/v0a884/reg/$DEVICE_ID" -H "User-Agent: okhttp/3.12.1" -H "Authorization: Bearer $ACCESS_TOKEN")
+        QUOTA=$(grep -oP '"quota":\K\d+' <<< $API)
+    fi
+    [[ $QUOTA -gt 10000000000000 ]] && QUOTA="$((QUOTA/1000000000000)) TB" || QUOTA="$((QUOTA/1000000000)) GB"
 }
 
 checkStatus(){
@@ -144,83 +156,83 @@ checkStatus(){
     
     if [[ -n $v44 && -z $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
             wgcf1=$wg5
             wgcf2=$wg7
             wgcf3=$wg2
             wgcf4=$wg3
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg1
             wgcf3=$wg3
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg7
             wgcf3=$wg3
         fi
         if [[ $warpcli == 1 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装WARP-Cli代理模式"
+            yellow "检测为纯IPv4的VPS，正在安装WARP-Cli代理模式"
         fi
         if [[ $warpcli == 2 ]]; then
-            yellow "检测到为纯IPv4的VPS，正在安装WARP-Cli全局模式"
+            yellow "检测为纯IPv4的VPS，正在安装WARP-Cli全局模式"
         fi
     fi
     if [[ -z $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg6
             wgcf2=$wg2
             wgcf3=$wg4
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
             wgcf1=$wg6
             wgcf2=$wg8
             wgcf3=$wg1
             wgcf4=$wg4
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6
             wgcf2=$wg8
             wgcf3=$wg4
         fi
         if [[ $warpcli == 1 ]]; then
-            yellow "检测到为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli代理模式"
+            yellow "检测为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli代理模式"
             exit 1
         fi
         if [[ $warpcli == 2 ]]; then
-            yellow "检测到为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli全局模式"
+            yellow "检测到纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli全局模式"
             exit 1
         fi
     fi
     if [[ -n $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
             wgcf3=$wg2
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
             wgcf3=$wg1
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
             wgcf2=$wg9
         fi
         if [[ $warpcli == 1 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装WARP-Cli代理模式"
+            yellow "检测为原生双栈的VPS，正在安装WARP-Cli代理模式"
         fi
         if [[ $warpcli == 2 ]]; then
-            yellow "检测到为原生双栈的VPS，正在安装WARP-Cli全局模式"
+            yellow "检测为原生双栈的VPS，正在安装WARP-Cli全局模式"
         fi
     fi
     sleep 2
@@ -1135,6 +1147,32 @@ showIP(){
         w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
         w5n=$(curl -sx socks5h://localhost:$w5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     fi
+
+    if [[ $w4 == "plus" ]]; then
+        check_quota
+        t4="${GREEN} $QUOTA ${PLAIN}"
+    else
+        t4="${RED}无限制${PLAIN}"
+    fi
+    if [[ $w6 == "plus" ]]; then
+        check_quota
+        t6="${GREEN} $QUOTA ${PLAIN}"
+    else
+        t6="${RED}无限制${PLAIN}"
+    fi
+    if [[ $w5s == "plus" ]]; then
+        check_quota
+        w5t="${GREEN} $QUOTA ${PLAIN}"
+    else
+        w5t="${RED}无限制${PLAIN}"
+    fi
+    if [[ $s5s == "plus" ]]; then
+        CHECK_TYPE=1
+        check_quota
+        s5t="${GREEN} $QUOTA ${PLAIN}"
+    else
+        s5t="${RED}无限制${PLAIN}"
+    fi
     
     [[ -z $s5s ]] || [[ $s5s == "off" ]] && s5="${RED}未启动${PLAIN}"
     [[ -z $w5s ]] || [[ $w5s == "off" ]] && w5="${RED}未启动${PLAIN}"
@@ -1165,30 +1203,30 @@ showIP(){
     [[ $w5n == "404" ]] && w5n="${YELLOW}Netflix 自制剧${PLAIN}"
     
     if [[ -n $v4 ]]; then
-        echo "-------------------------------------------------------------"
+        echo "----------------------------------------------------------------------------"
         echo -e "IPv4 地址：$v4  地区：$c4"
-        echo -e "WARP状态：$w4  Netfilx解锁状态：$n4"
+        echo -e "WARP状态：$w4  剩余流量：$t4  Netfilx解锁状态：$n4"
     fi
     if [[ -n $v6 ]]; then
-        echo "-------------------------------------------------------------"
+        echo "----------------------------------------------------------------------------"
         echo -e "IPv6 地址：$v6  地区：$c6"
-        echo -e "WARP状态：$w6  Netfilx解锁状态：$n6"
+        echo -e "WARP状态：$w6  剩余流量：$t6  Netfilx解锁状态：$n6"
     fi
     if [[ -n $s5p ]]; then
-        echo "-------------------------------------------------------------"
-        echo -e "WARP-Cli代理端口: 127.0.0.1:$s5p  状态: $s5"
+        echo "----------------------------------------------------------------------------"
+        echo -e "WARP-Cli代理端口: 127.0.0.1:$s5p  状态: $s5  剩余流量：$s5t"
         if [[ -n $s5i ]]; then
             echo -e "IP: $s5i  地区: $s5c  Netfilx解锁状态：$s5n"
         fi
     fi
     if [[ -n $w5p ]]; then
-        echo "-------------------------------------------------------------"
-        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5"
+        echo "----------------------------------------------------------------------------"
+        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5  剩余流量：$w5t"
         if [[ -n $w5i ]]; then
             echo -e "IP: $w5i  地区: $w5c  Netfilx解锁状态：$w5n"
         fi
     fi
-    echo "-------------------------------------------------------------"
+    echo "----------------------------------------------------------------------------"
 }
 
 menu(){
@@ -1199,28 +1237,16 @@ menu(){
     echo -e "# ${GREEN}GitHub${PLAIN}: https://github.com/taffychan                      #"
     echo "#############################################################"
     echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 全局双栈模式"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
-    echo -e " ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
-    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
-    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}"
-    echo " -------------"
-    echo -e " ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo " -------------"
-    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN} | ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
+    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 全局双栈模式             | ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
+    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                    | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
+    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                          | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
+    echo " ----------------------------------------------------------------------------------"
+    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式           | ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
+    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口   | ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
+    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式     | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}           | ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
