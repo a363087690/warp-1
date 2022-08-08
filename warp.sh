@@ -422,7 +422,7 @@ installWgcf(){
     
     until [[ -a wgcf-account.toml ]]; do
         yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
-        yes | wgcf register
+        wgcf register --accept-tos
         sleep 5
     done
     chmod +x wgcf-account.toml
@@ -725,7 +725,7 @@ installWireProxy(){
     
     until [[ -a wgcf-account.toml ]]; do
         yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
-        yes | wgcf register
+        wgcf register --accept-tos
         sleep 5
     done
     chmod +x wgcf-account.toml
@@ -811,6 +811,7 @@ TEXT
     yellow "正在启动 WireProxy-WARP 代理模式"
     systemctl start wireproxy-warp
     WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+    sleep 2
     retry_time=0
     until [[ $WireProxyStatus =~ on|plus ]]; do
         retry_time=$((${retry_time} + 1))
@@ -948,6 +949,7 @@ warpsw_teams(){
     read -rp "请复制粘贴WARP Teams账户配置文件链接: " teamconfigurl
     [[ -z $teamconfigurl ]] && red "未输入配置文件链接，无法升级！" && exit 1
     teamsconfig=$(curl -sSL "$teamconfigurl" | sed "s/\"/\&quot;/g")
+    echo $teamsconfig > /etc/wireguard/info.log
     wpteampublickey=$(expr "$teamsconfig" : '.*public_key&quot;:&quot;\([^&]*\).*')
     wpteamprivatekey=$(expr "$teamsconfig" : '.*private_key&quot;>\([^<]*\).*')
     wpteamv6address=$(expr "$teamsconfig" : '.*v6&quot;:&quot;\([^[&]*\).*')
@@ -972,7 +974,7 @@ warpsw1(){
         cd /etc/wireguard
         rm -f wgcf-account.toml
         until [[ -a wgcf-account.toml ]]; do
-            yes | wgcf register
+            wgcf register --accept-tos
             sleep 5
         done
         chmod +x wgcf-account.toml
@@ -993,19 +995,20 @@ warpsw1(){
         cd /etc/wireguard
         if [[ ! -f wgcf-account.toml ]]; then
             until [[ -a wgcf-account.toml ]]; do
-                yes | wgcf register
+                wgcf register --accept-tos
                 sleep 5
             done
         fi
         chmod +x wgcf-account.toml
         read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
         if [[ -n $warpkey ]]; then
+            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
             read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
             green "注册WARP+账户中, 如下方显示:400 Bad Request, 则使用WARP免费版账户"
             if [[ -n $devicename ]]; then
-                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g)
+                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g) > /etc/wireguard/info.log 2>&1
             else
-                wgcf update
+                wgcf update > /etc/wireguard/info.log 2>&1
             fi
             wgcf generate
             chmod +x wgcf-profile.conf
@@ -1085,7 +1088,7 @@ warpsw3(){
         cd /etc/wireguard
         rm -f wgcf-account.toml
         until [[ -a wgcf-account.toml ]]; do
-            yes | wgcf register
+            wgcf register --accept-tos
             sleep 5
         done
         chmod +x wgcf-account.toml
@@ -1105,19 +1108,20 @@ warpsw3(){
         cd /etc/wireguard
         if [[ ! -f wgcf-account.toml ]]; then
             until [[ -a wgcf-account.toml ]]; do
-                yes | wgcf register
+                wgcf register --accept-tos
                 sleep 5
             done
         fi
         chmod +x wgcf-account.toml
         read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
         if [[ -n $warpkey ]]; then
+            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
             read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
             green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
             if [[ -n $devicename ]]; then
-                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g)
+                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g) > /etc/wireguard/info.log 2>&1
             else
-                wgcf update
+                wgcf update > /etc/wireguard/info.log 2>&1
             fi
             wgcf generate
             chmod +x wgcf-profile.conf
@@ -1204,6 +1208,8 @@ showIP(){
     v6=$(curl -s6m8 https://ip.gs -k)
     c4=$(curl -s4m8 https://ip.gs/country -k $INTERFACE)
     c6=$(curl -s6m8 https://ip.gs/country -k)
+    d4="${RED}未设置${PLAIN}"
+    d6="${RED}未设置${PLAIN}"
     w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k $INTERFACE | grep warp | cut -d= -f2)
     w6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ -n $INTERFACE ]]; then
@@ -1222,6 +1228,7 @@ showIP(){
         s5n=$(curl -sx socks5h://localhost:$s5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     fi
     if [[ -n $w5p ]]; then
+        w5d="${RED}未设置${PLAIN}"
         w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
         w5i=$(curl -sx socks5h://localhost:$w5p https://ip.gs -k --connect-timeout 8)
         w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
@@ -1229,44 +1236,67 @@ showIP(){
     fi
 
     if [[ $w4 == "plus" ]]; then
-        check_quota
-        t4="${GREEN} $QUOTA ${PLAIN}"
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            d4=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            t4="${GREEN} $QUOTA ${PLAIN}"
+            w4="${GREEN}WARP+${PLAIN}"
+        else
+            t4="${RED}无限制${PLAIN}"
+            w4="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w4 == "on" ]]; then
+        t4="${RED}无限制${PLAIN}"
+        w4="${YELLOW}WARP 免费账户${PLAIN}"
     else
         t4="${RED}无限制${PLAIN}"
+        w4="${RED}未启用WARP${PLAIN}"
     fi
     if [[ $w6 == "plus" ]]; then
-        check_quota
-        t6="${GREEN} $QUOTA ${PLAIN}"
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            d6=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            t6="${GREEN} $QUOTA ${PLAIN}"
+            w6="${GREEN}WARP+${PLAIN}"
+        else
+            t6="${RED}无限制${PLAIN}"
+            w6="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w6 == "on" ]]; then
+        t6="${RED}无限制${PLAIN}"
+        w6="${YELLOW}WARP 免费账户${PLAIN}"
     else
         t6="${RED}无限制${PLAIN}"
+        w6="${RED}未启用WARP${PLAIN}"
     fi
     if [[ $w5s == "plus" ]]; then
-        check_quota
-        w5t="${GREEN} $QUOTA ${PLAIN}"
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            w5d=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            w5t="${GREEN} $QUOTA ${PLAIN}"
+            w5="${GREEN}WARP+${PLAIN}"
+        else
+            w5t="${RED}无限制${PLAIN}"
+            w5="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w5s == "on" ]]; then
+        w5t="${RED}无限制${PLAIN}"
+        w5="${YELLOW}WARP 免费账户${PLAIN}"
     else
         w5t="${RED}无限制${PLAIN}"
+        w5="${RED}未启动${PLAIN}"
     fi
     if [[ $s5s == "plus" ]]; then
         CHECK_TYPE=1
         check_quota
         s5t="${GREEN} $QUOTA ${PLAIN}"
+        s5="${GREEN}WARP+${PLAIN}"
     else
         s5t="${RED}无限制${PLAIN}"
+        s5="${YELLOW}WARP 免费账户${PLAIN}"
     fi
     
     [[ -z $s5s ]] || [[ $s5s == "off" ]] && s5="${RED}未启动${PLAIN}"
-    [[ -z $w5s ]] || [[ $w5s == "off" ]] && w5="${RED}未启动${PLAIN}"
-    [[ $s5s == "on" ]] && s5="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $w5s == "on" ]] && w5="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $s5s == "plus" ]] && s5="${GREEN}WARP+ / Teams${PLAIN}"
-    [[ $w5s == "plus" ]] && w5="${GREEN}WARP+ / Teams${PLAIN}"
-    [[ $w4 == "off" ]] && w4="${RED}未启用WARP${PLAIN}"
-    [[ $w6 == "off" ]] && w6="${RED}未启用WARP${PLAIN}"
-    [[ $w4 == "on" ]] && w4="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $w6 == "on" ]] && w6="${YELLOW}WARP 免费账户${PLAIN}"
-    [[ $w4 == "plus" ]] && w4="${GREEN}WARP+ / Teams${PLAIN}"
-    [[ $w6 == "plus" ]] && w6="${GREEN}WARP+ / Teams${PLAIN}"
-    
     [[ -z $n4 ]] || [[ $n4 == "000" ]] && n4="${RED}无法检测Netflix状态${PLAIN}"
     [[ -z $n6 ]] || [[ $n6 == "000" ]] && n6="${RED}无法检测Netflix状态${PLAIN}"
     [[ $n4 == "200" ]] && n4="${GREEN}已解锁 Netflix${PLAIN}"
@@ -1284,12 +1314,12 @@ showIP(){
     
     if [[ -n $v4 ]]; then
         echo "----------------------------------------------------------------------------"
-        echo -e "IPv4 地址：$v4  地区：$c4"
+        echo -e "IPv4 地址：$v4  地区：$c4  设备名称：$d4"
         echo -e "WARP状态：$w4  剩余流量：$t4  Netfilx解锁状态：$n4"
     fi
     if [[ -n $v6 ]]; then
         echo "----------------------------------------------------------------------------"
-        echo -e "IPv6 地址：$v6  地区：$c6"
+        echo -e "IPv6 地址：$v6  地区：$c6  设备名称：$d6"
         echo -e "WARP状态：$w6  剩余流量：$t6  Netfilx解锁状态：$n6"
     fi
     if [[ -n $s5p ]]; then
@@ -1301,9 +1331,9 @@ showIP(){
     fi
     if [[ -n $w5p ]]; then
         echo "----------------------------------------------------------------------------"
-        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5  剩余流量：$w5t"
+        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5  设备名称：$w5d"
         if [[ -n $w5i ]]; then
-            echo -e "IP: $w5i  地区: $w5c  Netfilx解锁状态：$w5n"
+            echo -e "IP: $w5i  地区: $w5c  剩余流量：$w5t  Netfilx解锁状态：$w5n"
         fi
     fi
     echo "----------------------------------------------------------------------------"
