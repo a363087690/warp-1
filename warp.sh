@@ -79,8 +79,7 @@ archAffix(){
 
 checkMTU(){
     yellow "正在检测并设置MTU最佳值, 请稍等..."
-    v66=$(curl -s6m8 https://ip.gs -k)
-    v44=$(curl -s4m8 https://ip.gs -k)
+    checkv4v6
     MTUy=1500
     MTUc=10
     if [[ -n ${v66} && -z ${v44} ]]; then
@@ -141,38 +140,87 @@ check_quota(){
     [[ $QUOTA -gt 10000000000000 ]] && QUOTA="$((QUOTA/1000000000000)) TB" || QUOTA="$((QUOTA/1000000000)) GB"
 }
 
+checkv4v6(){
+    v66=$(curl -s6m8 https://ip.gs -k)
+    v44=$(curl -s4m8 https://ip.gs -k)
+}
+
 checkStatus(){
     IPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ $IPv4Status =~ on|plus ]] || [[ $IPv6Status =~ on|plus ]]; then
         wg-quick down wgcf >/dev/null 2>&1
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
+        checkv4v6
         wg-quick up wgcf >/dev/null 2>&1
     else
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
+        checkv4v6
     fi
     
     if [[ -n $v44 && -z $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
-            wgcf1=$wg5
-            wgcf2=$wg7
-            wgcf3=$wg2
-            wgcf4=$wg3
+             if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg2
+                wgcf4=$wg3
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg2
+                wgcf4=$wg3
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
-            wgcf1=$wg5
-            wgcf2=$wg1
-            wgcf3=$wg3
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg1
+                wgcf3=$wg3
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+                wgcf1=$wg5
+                wgcf2=$wg1
+                wgcf3=$wg3
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            wgcf1=$wg5
-            wgcf2=$wg7
-            wgcf3=$wg3
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg3
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg3
+                installWgcf
+            fi
         fi
         if [[ $warpcli == 1 ]]; then
             yellow "检测为纯IPv4的VPS，正在安装WARP-Cli代理模式"
@@ -183,23 +231,69 @@ checkStatus(){
     fi
     if [[ -z $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-            wgcf1=$wg6
-            wgcf2=$wg2
-            wgcf3=$wg4
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg6
+                wgcf2=$wg2
+                wgcf3=$wg4
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+                wgcf1=$wg6
+                wgcf2=$wg2
+                wgcf3=$wg4
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
-            wgcf1=$wg6
-            wgcf2=$wg8
-            wgcf3=$wg1
-            wgcf4=$wg4
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg6
+                wgcf2=$wg8
+                wgcf3=$wg1
+                wgcf4=$wg4
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+                wgcf1=$wg6
+                wgcf2=$wg8
+                wgcf3=$wg1
+                wgcf4=$wg4
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            wgcf1=$wg6
-            wgcf2=$wg8
-            wgcf3=$wg4
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg6
+                wgcf2=$wg8
+                wgcf3=$wg4
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wgcf1=$wg6
+                wgcf2=$wg8
+                wgcf3=$wg4
+                installWgcf
+            fi
         fi
         if [[ $warpcli == 1 ]]; then
             yellow "检测为纯IPv6的VPS，纯IPv6的VPS暂时不支持WARP-Cli代理模式"
@@ -212,21 +306,65 @@ checkStatus(){
     fi
     if [[ -n $v44 && -n $v66 ]]; then
         if [[ $wgcfmode == 4 ]]; then
-            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-            wgcf1=$wg5
-            wgcf2=$wg7
-            wgcf3=$wg2
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg2
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+                wgcf1=$wg5
+                wgcf2=$wg7
+                wgcf3=$wg2
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 6 ]]; then
-            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
-            wgcf1=$wg5
-            wgcf2=$wg8
-            wgcf3=$wg1
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg8
+                wgcf3=$wg1
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+                wgcf1=$wg5
+                wgcf2=$wg8
+                wgcf3=$wg1
+                installWgcf
+            fi
         fi
         if [[ $wgcfmode == 5 ]]; then
-            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            wgcf1=$wg5
-            wgcf2=$wg9
+            if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+                yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wg-quick down wgcf >/dev/null 2>&1
+                rm -f /etc/wireguard/wgcf.conf
+                cd /etc/wireguard
+                wgcf generate
+                wgcf1=$wg5
+                wgcf2=$wg9
+                wgcfconf
+                mv wgcf-profile.conf wgcf.conf
+                wgcfcheck
+            else
+                yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+                wgcf1=$wg5
+                wgcf2=$wg9
+                installWgcf
+            fi
         fi
         if [[ $warpcli == 1 ]]; then
             yellow "检测为原生双栈的VPS，正在安装WARP-Cli代理模式"
@@ -239,7 +377,6 @@ checkStatus(){
 }
 
 installWgcf(){
-    checkStatus
     checkTun
     
     [[ $SYSTEM == "CentOS" ]] && [[ ${OSID} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
@@ -293,10 +430,7 @@ installWgcf(){
     wgcf generate
     chmod +x wgcf-profile.conf
     
-    echo $wgcf1 | sh
-    echo $wgcf2 | sh
-    echo $wgcf3 | sh
-    echo $wgcf4 | sh
+    wgcfconf
     
     checkMTU
     sed -i "s/MTU.*/MTU = $MTU/g" wgcf-profile.conf
@@ -309,6 +443,17 @@ installWgcf(){
     mv -f wgcf-profile.conf /etc/wireguard/wgcf.conf
     mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml
     
+    wgcfcheck
+}
+
+wgcfconf(){
+    echo $wgcf1 | sh
+    echo $wgcf2 | sh
+    echo $wgcf3 | sh
+    echo $wgcf4 | sh
+}
+
+wgcfcheck(){
     yellow "正在启动 Wgcf-WARP"
     wg-quick up wgcf >/dev/null 2>&1
     
@@ -336,7 +481,7 @@ installWgcf(){
     done
     systemctl enable wg-quick@wgcf >/dev/null 2>&1
     
-    green "Wgcf-WARP 已安装成功"
+    green "Wgcf-WARP 已安装并启动成功"
     echo ""
     showIP
 }
@@ -622,12 +767,10 @@ installWireProxy(){
     IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ $IPv4Status =~ on|plus ]] || [[ $IPv6Status =~ on|plus ]]; then
         wg-quick down wgcf >/dev/null 2>&1
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
+        checkv4v6
         wg-quick up wgcf >/dev/null 2>&1
     else
-        v66=$(curl -s6m8 https://ip.gs -k)
-        v44=$(curl -s4m8 https://ip.gs -k)
+        checkv4v6
     fi
     
     if [[ -z $v44 && -n $v66 ]]; then
@@ -1189,9 +1332,9 @@ menu(){
     echo -e ""
     read -rp "请输入选项 [0-17]：" menuChoice
     case $menuChoice in
-        1) wgcfmode=4 && installWgcf ;;
-        2) wgcfmode=6 && installWgcf ;;
-        3) wgcfmode=5 && installWgcf ;;
+        1) wgcfmode=4 && checkStatus ;;
+        2) wgcfmode=6 && checkStatus ;;
+        3) wgcfmode=5 && checkStatus ;;
         4) switchWgcf ;;
         5) uninstallWgcf ;;
         6) warpcli=2 && installCli ;;
