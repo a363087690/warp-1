@@ -214,13 +214,13 @@ checkStatus(){
         if [[ $wgcfmode == 4 ]]; then
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5
-            wgcf2=$wg9
+            wgcf2=$wg7
             wgcf3=$wg2
         fi
         if [[ $wgcfmode == 6 ]]; then
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
-            wgcf2=$wg9
+            wgcf2=$wg8
             wgcf3=$wg1
         fi
         if [[ $wgcfmode == 5 ]]; then
@@ -245,33 +245,29 @@ installWgcf(){
     [[ $SYSTEM == "CentOS" ]] && [[ ${OSID} -lt 7 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 7及以上版本的系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
-    [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 16 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
+    [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 18 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
     
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
-        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen python3 iputils
         if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
             wget -N https://raw.githubusercontent.com/taffychan/warp/main/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
     fi
     if [[ $SYSTEM == "Fedora" ]]; then
-        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen iputils
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables htop screen python3 iputils
     fi
     if [[ $SYSTEM == "Debian" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo wget curl lsb-release htop screen inetutils-ping
+        ${PACKAGE_INSTALL[int]} sudo wget curl lsb-release htop screen python3 inetutils-ping
         echo "deb http://deb.debian.org/debian $(lsb_release -sc)-backports main" | tee /etc/apt/sources.list.d/backports.list
         ${PACKAGE_UPDATE[int]}
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
     fi
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop screen inetutils-ping
-        if [[ $OSID =~ 16 ]]; then
-            add-apt-repository ppa:wireguard/wireguard
-            ${PACKAGE_UPDATE[int]}
-        fi
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop screen python3 inetutils-ping
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
     fi
     
@@ -285,10 +281,6 @@ installWgcf(){
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
         cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
-        wgcfFile=1
-    fi
-    if [[ -f /root/wgcf-account.toml ]]; then
-        wgcfFile=1
     fi
     
     until [[ -a wgcf-account.toml ]]; do
@@ -297,21 +289,6 @@ installWgcf(){
         sleep 5
     done
     chmod +x wgcf-account.toml
-    
-    if [[ ! $wgcfFile == 1 ]]; then
-        yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
-        if [[ -n $warpkey ]]; then
-            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
-            read -rp "请输入自定义设备名，如未输入则使用随机设备名: " warpname
-            green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $warpname ]]; then
-                wgcf update --name $(echo $warpname | sed s/[[:space:]]/_/g)
-            else
-                wgcf update
-            fi
-        fi
-    fi
     
     wgcf generate
     chmod +x wgcf-profile.conf
@@ -341,8 +318,8 @@ installWgcf(){
     until [[ $WgcfV4Status =~ "on"|"plus" ]] || [[ $WgcfV6Status =~ "on"|"plus" ]]; do
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
-        WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-        WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
         sleep 8
         retry_time=$((${retry_time} + 1))
         if [[ $retry_time == 6 ]]; then
@@ -365,17 +342,17 @@ installWgcf(){
 }
 
 switchWgcf(){
-    WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     
-    if [[ $WgcfWARP4Status =~ on|plus ]] || [[ $WgcfWARP6Status =~ on|plus ]]; then
+    if [[ $WgcfV4Status =~ on|plus ]] || [[ $WgcfV6Status =~ on|plus ]]; then
         wg-quick down wgcf >/dev/null 2>&1
         systemctl disable wg-quick@wgcf >/dev/null 2>&1
         green "Wgcf-WARP关闭成功!"
         exit 1
     fi
     
-    if [[ $WgcfWARP4Status == off ]] || [[ $WgcfWARP6Status == off ]]; then
+    if [[ $WgcfV4Status == off ]] || [[ $WgcfV6Status == off ]]; then
         wg-quick up wgcf >/dev/null 2>&1
         systemctl enable wg-quick@wgcf >/dev/null 2>&1
         green "Wgcf-WARP启动成功!"
@@ -412,14 +389,14 @@ installCli(){
     
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
-        ${PACKAGE_INSTALL[int]} sudo curl wget net-tools htop iputils screen
+        ${PACKAGE_INSTALL[int]} sudo curl wget net-tools htop iputils screen python3
         rpm -ivh http://pkg.cloudflareclient.com/cloudflare-release-el8.rpm
         ${PACKAGE_INSTALL[int]} cloudflare-warp
     fi
     
     if [[ $SYSTEM == "Debian" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop inetutils-ping screen
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop inetutils-ping screen python3
         [[ -z $(type -P gpg 2>/dev/null) ]] && ${PACKAGE_INSTALL[int]} gnupg
         [[ -z $(apt list 2>/dev/null | grep apt-transport-https | grep installed) ]] && ${PACKAGE_INSTALL[int]} apt-transport-https
         curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
@@ -430,7 +407,7 @@ installCli(){
     
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop inetutils-ping screen
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release htop inetutils-ping screen python3
         curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
         echo "deb http://pkg.cloudflareclient.com/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
         ${PACKAGE_UPDATE[int]}
@@ -438,16 +415,6 @@ installCli(){
     fi
     
     warp-cli --accept-tos register >/dev/null 2>&1
-    yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-    read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
-    if [[ -n $warpkey ]]; then
-        warp-cli --accept-tos set-license "$warpkey" >/dev/null 2>&1 && sleep 1
-        if [[ $(warp-cli --accept-tos account) =~ Limited ]]; then
-            green "WARP+账户启用成功"
-        else
-            red "WARP+账户启用失败, 即将使用WARP免费版账户"
-        fi
-    fi
     
     if [[ $warpcli == 1 ]]; then
         read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
@@ -560,21 +527,20 @@ warpcli_changeport() {
 switchCli(){
     if [[ $(warp-cli --accept-tos status) =~ Connected ]]; then
         warp-cli --accept-tos disconnect >/dev/null 2>&1
-        green "WARP-Cli代理模式关闭成功! "
+        green "WARP-Cli客户端关闭成功! "
         exit 1
     fi
     if [[ $(warp-cli --accept-tos status) =~ Disconnected ]]; then
-        yellow "正在启动Warp-Cli代理模式"
+        yellow "正在启动Warp-Cli"
         warp-cli --accept-tos connect >/dev/null 2>&1
         until [[ $(warp-cli --accept-tos status) =~ Connected ]]; do
-            red "启动Warp-Cli代理模式失败, 正在尝试重启"
+            red "启动Warp-Cli客户端失败, 正在尝试重启"
             warp-cli --accept-tos disconnect >/dev/null 2>&1
             warp-cli --accept-tos connect >/dev/null 2>&1
             sleep 5
         done
         warp-cli --accept-tos enable-always-on >/dev/null 2>&1
-        WARPCliPort=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
-        green "WARP-Cli代理模式启动成功! "
+        green "WARP-Cli客户端启动成功! "
         exit 1
     fi
 }
@@ -585,7 +551,7 @@ uninstallCli(){
     warp-cli --accept-tos delete >/dev/null 2>&1
     ${PACKAGE_UNINSTALL[int]} cloudflare-warp
     systemctl disable --now warp-svc >/dev/null 2>&1
-    green "WARP-Cli代理模式已彻底卸载成功!"
+    green "WARP-Cli客户端已彻底卸载成功!"
 }
 
 installWireProxy(){
@@ -596,10 +562,10 @@ installWireProxy(){
     fi
     
     if [[ $SYSTEM == "CentOS" ]]; then
-        ${PACKAGE_INSTALL[int]} sudo curl wget htop iputils screen
+        ${PACKAGE_INSTALL[int]} sudo curl wget htop iputils screen python3
     else
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget htop inetutils-ping screen
+        ${PACKAGE_INSTALL[int]} sudo curl wget htop inetutils-ping screen python3
     fi
     
     wget -N https://raw.githubusercontent.com/taffychan/warp/main/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
@@ -610,10 +576,6 @@ installWireProxy(){
     
     if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
         cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
-        wgcfFile=1
-    fi
-    if [[ -f /root/wgcf-account.toml ]]; then
-        wgcfFile=1
     fi
     
     until [[ -a wgcf-account.toml ]]; do
@@ -622,21 +584,6 @@ installWireProxy(){
         sleep 5
     done
     chmod +x wgcf-account.toml
-    
-    if [[ ! $wgcfFile == 1 ]]; then
-        yellow "使用WARP免费版账户请按回车跳过 \n如需使用WARP+账户, 请复制WARP+的许可证密钥(26个字符)后回车"
-        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
-        if [[ -n $warpkey ]]; then
-            sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
-            read -rp "请输入自定义设备名，如未输入则使用随机设备名: " warpname
-            green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $warpname ]]; then
-                wgcf update --name $(echo $warpname | sed s/[[:space:]]/_/g)
-            else
-                wgcf update
-            fi
-        fi
-    fi
     
     wgcf generate
     chmod +x wgcf-profile.conf
@@ -817,29 +764,19 @@ uninstallWireProxy(){
 }
 
 warpup(){
+    wget -N --no-check-certificate https://raw.githubusercontent.com/ALIILAPRO/warp-plus-cloudflare/master/wp-plus.py
+    sed -i "27 s/[(][^)]*[)]//g" wp-plus.py
     yellow "获取CloudFlare WARP账号信息方法: "
     green "电脑: 下载并安装CloudFlare WARP→设置→偏好设置→复制设备ID到脚本中"
     green "手机: 下载并安装1.1.1.1 APP→菜单→高级→诊断→复制设备ID到脚本中"
     echo ""
     yellow "请按照下面指示, 输入您的CloudFlare WARP账号信息:"
     read -rp "请输入您的WARP设备ID (36位字符): " license
-    read -rp "请输入你期望刷到的流量 (单位: GB): " flowdata
-    echo ""
-    echo -e "已设置你期望刷到的WARP+流量为: $flowdata GB"
-    yellow "正在准备刷WARP+流量, 请稍等30秒-1分钟..."
-    for ((i = 0; i < ${flowdata}; i++)); do
-        [[ $i == 0 ]] && sleep_try=30 && sleep_min=20 && sleep_max=600
-        install_id=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 22) && \
-        curl -X POST -m 10 -sA "okhttp/3.12.1" -H 'content-type: application/json' -H 'Host: api.cloudflareclient.com' \
-        --data "{\"key\": \"$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 43)=\",\"install_id\": \"$install_id\",\"fcm_token\": \"APA91b$install_id$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 134)\",\"referrer\": \"$license\",\"warp_enabled\": false,\"tos\": \"$(date -u +%FT%T.$(tr -dc '0-9' </dev/urandom | head -c 3)Z)\",\"type\": \"Android\",\"locale\": \"en_US\"}" \
-        --url "https://api.cloudflareclient.com/v0a$(shuf -i 100-999 -n 1)/reg" | grep -qE "referral_count\":1" && status=0 || status=1
-        [[ $sleep_try > $sleep_max ]] && sleep_try=300
-        [[ $sleep_try == $sleep_min ]] && sleep_try=$((sleep_try+1))
-        [[ $status == 0 ]] && sleep_try=$((sleep_try-1)) && sleep $sleep_try && rit[i]=$i && echo -n $i-o- && continue
-        [[ $status == 1 ]] && sleep_try=$((sleep_try+2)) && sleep $sleep_try && bad[i]=$i && echo -n $i-x- && continue
-    done
-    echo ""
-    echo -e "本次运行共成功获取WARP+流量 ${GREEN} ${#rit[*]} ${PLAIN} GB"
+    sed -i "27 s/input/'$license'/" wp-plus.py
+    read -rp "请输入Screen会话名称 (默认为wp-plus): " screenname
+    [[ -z $screenname ]] && screenname="wp-plus"
+    screen -UdmS $screenname bash -c '/usr/bin/python3 /root/wp-plus.py'
+    green "创建刷WARP+流量任务成功！ Screen会话名称为：$screenname"
 }
 
 warpsw1_freeplus(){
@@ -901,12 +838,12 @@ warpsw1(){
         warpsw1_freeplus
         wg-quick up wgcf >/dev/null 2>&1
         yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
-        WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-        WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-        if [[ $WgcfWARP4Status == "on" ]] || [[ $WgcfWARP6Status == "on" ]]; then
+        WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+        if [[ $WgcfV4Status == "on" ]] || [[ $WgcfV6Status == "on" ]]; then
             green "Wgcf-WARP 账户类型切换为 WARP 免费账户 成功！"
         else
-            red "切换 Wgcf-WARP 账户类型失败，请卸载后重新切换账户！"
+            red "切换 Wgcf-WARP 账户类型失败，请尝试卸载Wgcf-WARP后重新切换账户！"
         fi
     fi
     if [[ $accountInput == 2 ]]; then
@@ -918,12 +855,12 @@ warpsw1(){
             done
         fi
         chmod +x wgcf-account.toml
-        read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-        if [[ -n $WPPlusKey ]]; then
-            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " WPPlusName
+        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+        if [[ -n $warpkey ]]; then
+            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
             green "注册WARP+账户中, 如下方显示:400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $WPPlusName ]]; then
-                wgcf update --name $(echo $WPPlusName | sed s/[[:space:]]/_/g)
+            if [[ -n $devicename ]]; then
+                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g)
             else
                 wgcf update
             fi
@@ -933,9 +870,9 @@ warpsw1(){
             warpsw1_freeplus
             wg-quick up wgcf >/dev/null 2>&1
             yellow "正在检查WARP+账户连通性，请稍等..." && sleep 5
-            WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-            WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-            if [[ $WgcfWARP4Status == "plus" ]] || [[ $WgcfWARP6Status == "plus" ]]; then
+            WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+            WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+            if [[ $WgcfV4Status == "plus" ]] || [[ $WgcfV6Status == "plus" ]]; then
                 green "Wgcf-WARP 账户类型切换为 WARP+ 成功！"
             else
                 red "切换 Wgcf-WARP 账户类型失败，请卸载后重新切换账户！"
@@ -954,10 +891,10 @@ warpsw1(){
             sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf.conf;
             wg-quick up wgcf >/dev/null 2>&1
             yellow "正在检查WARP Teams账户连通性, 请稍等..."
-            WgcfWARP4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-            WgcfWARP6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+            WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+            WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
             retry_time=1
-            until [[ $WgcfWARP4Status =~ on|plus ]] || [[ $WgcfWARP6Status =~ on|plus ]]; do
+            until [[ $WgcfV4Status =~ on|plus ]] || [[ $WgcfV6Status =~ on|plus ]]; do
                 red "无法联通WARP Teams账户, 正在尝试重启, 重试次数：$retry_time"
                 retry_time=$((${retry_time} + 1))
                 if [[ $retry_time == 4 ]]; then
@@ -980,9 +917,9 @@ warpsw1(){
 warpsw2(){
     warp-cli --accept-tos disconnect >/dev/null 2>&1
     warp-cli --accept-tos register >/dev/null 2>&1
-    read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-    if [[ -n $WPPlusKey ]]; then
-        warp-cli --accept-tos set-license "$WPPlusKey" >/dev/null 2>&1 && sleep 1
+    read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+    if [[ -n $warpkey ]]; then
+        warp-cli --accept-tos set-license "$warpkey" >/dev/null 2>&1 && sleep 1
     fi
     warp-cli --accept-tos set-mode proxy >/dev/null 2>&1
     warp-cli --accept-tos set-proxy-port "$s5p" >/dev/null 2>&1
@@ -1030,12 +967,12 @@ warpsw3(){
             done
         fi
         chmod +x wgcf-account.toml
-        read -rp "输入WARP账户许可证密钥 (26个字符): " WPPlusKey
-        if [[ -n $WPPlusKey ]]; then
-            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " WPPlusName
+        read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
+        if [[ -n $warpkey ]]; then
+            read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
             green "注册WARP+账户中, 如下方显示: 400 Bad Request, 则使用WARP免费版账户"
-            if [[ -n $WPPlusName ]]; then
-                wgcf update --name $(echo $WPPlusName | sed s/[[:space:]]/_/g)
+            if [[ -n $devicename ]]; then
+                wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g)
             else
                 wgcf update
             fi
