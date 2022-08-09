@@ -674,16 +674,9 @@ switchCli(){
         warp-cli --accept-tos disconnect >/dev/null 2>&1
         green "WARP-Cli客户端关闭成功! "
         exit 1
-    fi
-    if [[ $(warp-cli --accept-tos status) =~ Disconnected ]]; then
+    elif [[ $(warp-cli --accept-tos status) =~ Disconnected ]]; then
         yellow "正在启动Warp-Cli"
         warp-cli --accept-tos connect >/dev/null 2>&1
-        until [[ $(warp-cli --accept-tos status) =~ Connected ]]; do
-            red "启动Warp-Cli客户端失败, 正在尝试重启"
-            warp-cli --accept-tos disconnect >/dev/null 2>&1
-            warp-cli --accept-tos connect >/dev/null 2>&1
-            sleep 5
-        done
         warp-cli --accept-tos enable-always-on >/dev/null 2>&1
         green "WARP-Cli客户端启动成功! "
         exit 1
@@ -1204,16 +1197,16 @@ showIP(){
         INTERFACE='--interface CloudflareWARP'
     fi
     Browser_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
-    v4=$(curl -s4m8 https://ip.gs -k $INTERFACE)
+    v4=$(curl -s4m8 https://ip.gs -k $INTERFACE) || v4=$(curl -s4m8 https://ip.gs -k)
     v6=$(curl -s6m8 https://ip.gs -k)
-    c4=$(curl -s4m8 https://ip.gs/country -k $INTERFACE)
+    c4=$(curl -s4m8 https://ip.gs/country -k $INTERFACE) || c4=$(curl -s4m8 https://ip.gs/country -k)
     c6=$(curl -s6m8 https://ip.gs/country -k)
     d4="${RED}未设置${PLAIN}"
     d6="${RED}未设置${PLAIN}"
-    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k $INTERFACE | grep warp | cut -d= -f2)
+    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k $INTERFACE | grep warp | cut -d= -f2) || w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     w6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ -n $INTERFACE ]]; then
-        n4=$(curl --user-agent "${Browser_UA}" $INTERFACE -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/$81215567" 2>&1)
+        n4=$(curl --user-agent "${Browser_UA}" $INTERFACE -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/$81215567" 2>&1) || n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     else
         n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
     fi
