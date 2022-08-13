@@ -1150,7 +1150,7 @@ warpsw2(){
     until [[ -z $warpkey || $warpkey =~ ^[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}$ ]]; do
         red "WARP账户许可证密钥输入错误，请重新输入！"
         read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
-    fi
+    done
     if [[ -n $warpkey ]]; then
         warp-cli --accept-tos set-license "$warpkey" >/dev/null 2>&1 && sleep 1
     fi
