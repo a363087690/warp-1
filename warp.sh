@@ -1000,7 +1000,7 @@ warpsw1(){
         until [[ -z $warpkey || $warpkey =~ ^[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}$ ]]; do
             red "WARP账户许可证密钥输入错误，请重新输入！"
             read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
-        fi
+        done
         if [[ -n $warpkey ]]; then
             sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
             read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
