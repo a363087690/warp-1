@@ -30,7 +30,7 @@ alive(){
 check(){
     IPv4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     IPv6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    if [[ $IPv4Status =~ on|plus ]] && [[ $IPv6Status =~ on|plus ]]; then
+    if [[ $IPv4Status =~ on|plus ]] || [[ $IPv6Status =~ on|plus ]]; then
         alive
     else
         failed
