@@ -133,7 +133,7 @@ wgcfreg(){
     chmod +x wgcf-profile.conf
 }
 
-wgcfv4(){
+wgcfv44(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
@@ -200,7 +200,7 @@ wgcfv4(){
     fi
 }
 
-wgcfv6(){
+wgcfv66(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
@@ -265,7 +265,7 @@ wgcfv6(){
     fi
 }
 
-wgcfv4v6(){
+wgcfv46(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
@@ -377,6 +377,7 @@ installwgcf(){
 
     systemctl enable wg-quick@wgcf >/dev/null 2>&1
     wgcfcheck
+    showIP
 }
 
 switchconf(){
@@ -677,6 +678,118 @@ uninstallcli(){
     green "WARP-Cli客户端已彻底卸载成功!"
 }
 
+installWireProxy(){
+    if [[ $c4 == "Hong Kong" || $c6 == "Hong Kong" ]]; then
+        red "检测到地区为 Hong Kong 的VPS!"
+        yellow "由于 CloudFlare 对 Hong Kong 屏蔽了 Wgcf, 因此无法使用 WireProxy-WARP 代理模式。请使用其他地区的VPS"
+        exit 1
+    fi
+    
+    if [[ $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop iputils screen python3
+    else
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3
+    fi
+    
+    wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
+    chmod +x /usr/local/bin/wireproxy
+    
+    initwgcf
+    wgcfreg
+    
+    checkwgcf
+    
+    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        checkmtu
+        checkv4v6
+        wg-quick up wgcf >/dev/null 2>&1
+    else
+        checkmtu
+        checkv4v6
+    fi
+    
+    read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
+    [[ -z $WireProxyPort ]] && WireProxyPort=$(shuf -i 1000-65535 -n 1)
+    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
+        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; do
+            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WireProxyPort") ]]; then
+                yellow "你设置的端口目前已被占用，请重新输入端口"
+                read -rp "请输入WireProxy-WARP使用的代理端口 (默认随机端口): " WireProxyPort
+            fi
+        done
+    fi
+    
+    WgcfPrivateKey=$(grep PrivateKey wgcf-profile.conf | sed "s/PrivateKey = //g")
+    WgcfPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
+    
+    if [[ -z $v4 && -n $v6 ]]; then
+        WireproxyEndpoint="[2606:4700:d0::a29f:c001]:2408"
+    else
+        WireproxyEndpoint="162.159.193.10:2408"
+    fi
+    
+    cat <<EOF > /etc/wireguard/proxy.conf
+[Interface]
+Address = 172.16.0.2/32
+MTU = $MTU
+PrivateKey = $WgcfPrivateKey
+DNS = 1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
+[Peer]
+PublicKey = $WgcfPublicKey
+Endpoint = $WireproxyEndpoint
+[Socks5]
+BindAddress = 127.0.0.1:$WireProxyPort
+EOF
+    
+    cat <<'TEXT' > /etc/systemd/system/wireproxy-warp.service
+[Unit]
+Description=CloudFlare WARP Socks5 proxy mode based for WireProxy, script by owo.misaka.rest
+After=network.target
+[Install]
+WantedBy=multi-user.target
+[Service]
+Type=simple
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/wireproxy -c /etc/wireguard/proxy.conf
+Restart=always
+TEXT
+    
+    rm -f wgcf-profile.conf
+    mv wgcf-account.toml /etc/wireguard/wgcf-account.toml
+    
+    yellow "正在启动 WireProxy-WARP 代理模式"
+    systemctl start wireproxy-warp
+    WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+    sleep 2
+    retry_time=0
+    until [[ $WireProxyStatus =~ on|plus ]]; do
+        retry_time=$((${retry_time} + 1))
+        red "启动 WireProxy-WARP 代理模式失败，正在尝试重启，重试次数：$retry_time"
+        systemctl stop wireproxy-warp
+        systemctl start wireproxy-warp
+        WireProxyStatus=$(curl -sx socks5h://localhost:$WireProxyPort https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        if [[ $retry_time == 6 ]]; then
+            uninstallWireProxy
+            echo ""
+            red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 检查 https://www.cloudflarestatus.com/ 查询VPS就近区域。如处于黄色的【Re-routed】状态则不可使用WireProxy-WARP 代理模式"
+            yellow "4. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        fi
+        sleep 8
+    done
+    sleep 5
+    systemctl enable wireproxy-warp >/dev/null 2>&1
+    green "WireProxy-WARP代理模式已启动成功!"
+    echo ""
+    showIP
+}
+
 showIP(){
     if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
         INTERFACE='--interface CloudflareWARP'
@@ -841,9 +954,9 @@ menu(){
     echo -e ""
     read -rp "请输入选项 [0-17]：" menuChoice
     case $menuChoice in
-        1) wgcfv4 ;;
-        2) wgcfv6 ;;
-        3) wgcfv4v6 ;;
+        1) wgcfv44 ;;
+        2) wgcfv66 ;;
+        3) wgcfv46 ;;
         4) switchwgcf ;;
         5) uninstallwgcf ;;
         6) warpcli=1 && installcli ;;
