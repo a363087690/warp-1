@@ -359,7 +359,7 @@ checkmtu(){
     checkv4v6
     MTUy=1500
     MTUc=10
-    if [[ -n ${v66} && -z ${v44} ]]; then
+    if [[ -n ${v6} && -z ${v4} ]]; then
         ping='ping6'
         IP1='2606:4700:4700::1001'
         IP2='2001:4860:4860::8888'
