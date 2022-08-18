@@ -153,6 +153,7 @@ wgcfv44(){
             wgcf4=$wg3
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
             wgcf1=$wg5
@@ -172,6 +173,7 @@ wgcfv44(){
             wgcf3=$wg4
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg6
@@ -190,6 +192,7 @@ wgcfv44(){
             wgcf3=$wg2
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5
@@ -219,6 +222,7 @@ wgcfv66(){
             wgcf3=$wg3
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -238,6 +242,7 @@ wgcfv66(){
             wgcf4=$wg4
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
             wgcf1=$wg6
@@ -256,6 +261,7 @@ wgcfv66(){
             wgcf2=$wg9
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -284,6 +290,7 @@ wgcfv46(){
             wgcf3=$wg3
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -302,6 +309,7 @@ wgcfv46(){
             wgcf3=$wg4
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6
@@ -319,6 +327,7 @@ wgcfv46(){
             wgcf2=$wg9
             wgcfconf
             wgcfcheck
+            showIP
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
