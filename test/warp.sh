@@ -792,8 +792,8 @@ menu(){
         3) wgcfv4v6 ;;
         4) switchwgcf ;;
         5) uninstallwgcf ;;
-        6) warpcli=1 && installCli ;;
-        7) warpcli=2 && installCli ;;
+        6) warpcli=1 && installcli ;;
+        7) warpcli=2 && installcli ;;
         8) warpcli_changeport ;;
         9) switchCli ;;
         10) uninstallCli ;;
