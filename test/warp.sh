@@ -282,7 +282,7 @@ installwgcf(){
     [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
     [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 18 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
-    
+
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
@@ -439,6 +439,147 @@ uninstallwgcf(){
         sed -i '/^precedence[ ]*::ffff:0:0\/96[ ]*100/d' /etc/gai.conf
     fi
     green "Wgcf-WARP 已彻底卸载成功!"
+}
+
+showIP(){
+    if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
+        INTERFACE='--interface CloudflareWARP'
+    fi
+    Browser_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
+    v4=$(curl -s4m8 https://ip.gs -k $INTERFACE) || v4=$(curl -s4m8 https://ip.gs -k)
+    v6=$(curl -s6m8 https://ip.gs -k)
+    c4=$(curl -s4m8 https://ip.gs/country -k $INTERFACE) || c4=$(curl -s4m8 https://ip.gs/country -k)
+    c6=$(curl -s6m8 https://ip.gs/country -k)
+    d4="${RED}未设置${PLAIN}"
+    d6="${RED}未设置${PLAIN}"
+    w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k $INTERFACE | grep warp | cut -d= -f2) || w4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    w6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ -n $INTERFACE ]]; then
+        n4=$(curl --user-agent "${Browser_UA}" $INTERFACE -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/$81215567" 2>&1) || n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    else
+        n4=$(curl -4 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
+    n6=$(curl -6 --user-agent "${Browser_UA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    
+    s5p=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+    w5p=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
+    if [[ -n $s5p ]]; then
+        s5s=$(curl -sx socks5h://localhost:$s5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        s5i=$(curl -sx socks5h://localhost:$s5p https://ip.gs -k --connect-timeout 8)
+        s5c=$(curl -sx socks5h://localhost:$s5p https://ip.gs/country -k --connect-timeout 8)
+        s5n=$(curl -sx socks5h://localhost:$s5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
+    if [[ -n $w5p ]]; then
+        w5d="${RED}未设置${PLAIN}"
+        w5s=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+        w5i=$(curl -sx socks5h://localhost:$w5p https://ip.gs -k --connect-timeout 8)
+        w5c=$(curl -sx socks5h://localhost:$w5p https://ip.gs/country -k --connect-timeout 8)
+        w5n=$(curl -sx socks5h://localhost:$w5p -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    fi
+
+    if [[ $w4 == "plus" ]]; then
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            d4=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            t4="${GREEN} $QUOTA ${PLAIN}"
+            w4="${GREEN}WARP+${PLAIN}"
+        else
+            t4="${RED}无限制${PLAIN}"
+            w4="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w4 == "on" ]]; then
+        t4="${RED}无限制${PLAIN}"
+        w4="${YELLOW}WARP 免费账户${PLAIN}"
+    else
+        t4="${RED}无限制${PLAIN}"
+        w4="${RED}未启用WARP${PLAIN}"
+    fi
+    if [[ $w6 == "plus" ]]; then
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            d6=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            t6="${GREEN} $QUOTA ${PLAIN}"
+            w6="${GREEN}WARP+${PLAIN}"
+        else
+            t6="${RED}无限制${PLAIN}"
+            w6="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w6 == "on" ]]; then
+        t6="${RED}无限制${PLAIN}"
+        w6="${YELLOW}WARP 免费账户${PLAIN}"
+    else
+        t6="${RED}无限制${PLAIN}"
+        w6="${RED}未启用WARP${PLAIN}"
+    fi
+    if [[ $w5s == "plus" ]]; then
+        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+            w5d=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+            check_quota
+            w5t="${GREEN} $QUOTA ${PLAIN}"
+            w5="${GREEN}WARP+${PLAIN}"
+        else
+            w5t="${RED}无限制${PLAIN}"
+            w5="${GREEN}WARP Teams${PLAIN}"
+        fi
+    elif [[ $w5s == "on" ]]; then
+        w5t="${RED}无限制${PLAIN}"
+        w5="${YELLOW}WARP 免费账户${PLAIN}"
+    else
+        w5t="${RED}无限制${PLAIN}"
+        w5="${RED}未启动${PLAIN}"
+    fi
+    if [[ $s5s == "plus" ]]; then
+        CHECK_TYPE=1
+        check_quota
+        s5t="${GREEN} $QUOTA ${PLAIN}"
+        s5="${GREEN}WARP+${PLAIN}"
+    else
+        s5t="${RED}无限制${PLAIN}"
+        s5="${YELLOW}WARP 免费账户${PLAIN}"
+    fi
+    
+    [[ -z $s5s ]] || [[ $s5s == "off" ]] && s5="${RED}未启动${PLAIN}"
+    
+    [[ -z $n4 ]] || [[ $n4 == "000" ]] && n4="${RED}无法检测Netflix状态${PLAIN}"
+    [[ -z $n6 ]] || [[ $n6 == "000" ]] && n6="${RED}无法检测Netflix状态${PLAIN}"
+    [[ $n4 == "200" ]] && n4="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $n6 == "200" ]] && n6="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $s5n == "200" ]] && s5n="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $w5n == "200" ]] && w5n="${GREEN}已解锁 Netflix${PLAIN}"
+    [[ $n4 == "403" ]] && n4="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $n6 == "403" ]] && n6="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $s5n == "403" ]]&& s5n="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $w5n == "403" ]]&& w5n="${RED}无法解锁 Netflix${PLAIN}"
+    [[ $n4 == "404" ]] && n4="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $n6 == "404" ]] && n6="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $s5n == "404" ]] && s5n="${YELLOW}Netflix 自制剧${PLAIN}"
+    [[ $w5n == "404" ]] && w5n="${YELLOW}Netflix 自制剧${PLAIN}"
+    
+    if [[ -n $v4 ]]; then
+        echo "----------------------------------------------------------------------------"
+        echo -e "IPv4 地址：$v4  地区：$c4  设备名称：$d4"
+        echo -e "WARP状态：$w4  剩余流量：$t4  Netfilx解锁状态：$n4"
+    fi
+    if [[ -n $v6 ]]; then
+        echo "----------------------------------------------------------------------------"
+        echo -e "IPv6 地址：$v6  地区：$c6  设备名称：$d6"
+        echo -e "WARP状态：$w6  剩余流量：$t6  Netfilx解锁状态：$n6"
+    fi
+    if [[ -n $s5p ]]; then
+        echo "----------------------------------------------------------------------------"
+        echo -e "WARP-Cli代理端口: 127.0.0.1:$s5p  状态: $s5  剩余流量：$s5t"
+        if [[ -n $s5i ]]; then
+            echo -e "IP: $s5i  地区: $s5c  Netfilx解锁状态：$s5n"
+        fi
+    fi
+    if [[ -n $w5p ]]; then
+        echo "----------------------------------------------------------------------------"
+        echo -e "WireProxy代理端口: 127.0.0.1:$w5p  状态: $w5  设备名称：$w5d"
+        if [[ -n $w5i ]]; then
+            echo -e "IP: $w5i  地区: $w5c  剩余流量：$w5t  Netfilx解锁状态：$w5n"
+        fi
+    fi
+    echo "----------------------------------------------------------------------------"
 }
 
 menu(){
