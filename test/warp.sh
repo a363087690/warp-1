@@ -41,6 +41,265 @@ done
 
 [[ -z $SYSTEM ]] && red "目前你的VPS的操作系统暂未支持！" && exit 1
 
+main=$(uname -r | awk -F . '{print $1}')
+minor=$(uname -r | awk -F . '{print $2}')
+OSID=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+VIRT=$(systemd-detect-virt)
+TUN=$(cat /dev/net/tun 2>&1 | tr '[:upper:]' '[:lower:]')
+
+# Wgcf 去除IPv4/IPv6
+wg1="sed -i '/0\.0\.0\.0\/0/d' /etc/wireguard/wgcf.conf"
+wg2="sed -i '/\:\:\/0/d' /etc/wireguard/wgcf.conf"
+# Wgcf Endpoint
+wg3="sed -i 's/engage.cloudflareclient.com/162.159.193.10/g' /etc/wireguard/wgcf.conf"
+wg4="sed -i 's/engage.cloudflareclient.com/[2606:4700:d0::a29f:c001]/g' /etc/wireguard/wgcf.conf"
+# Wgcf DNS Servers
+wg5="sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844/g' /etc/wireguard/wgcf.conf"
+wg6="sed -i 's/1.1.1.1/2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' /etc/wireguard/wgcf.conf"
+# Wgcf 允许外部IP地址
+wg7='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
+wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
+wg9='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
+
+if [[ -z $(type -P curl) ]]; then
+    if [[ ! $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_UPDATE[int]}
+    fi
+    ${PACKAGE_INSTALL[int]} curl
+fi
+
+archAffix(){
+    case "$(uname -m)" in
+        x86_64 | amd64 ) echo 'amd64' ;;
+        armv8 | arm64 | aarch64 ) echo 'arm64' ;;
+        s390x ) echo 's390x' ;;
+        * ) red "不支持的CPU架构!" && exit 1 ;;
+    esac
+}
+
+checkv4v6(){
+    v6=$(curl -s6m8 https://ip.gs -k)
+    v4=$(curl -s4m8 https://ip.gs -k)
+}
+
+wgcfv4(){
+    checkwgcf
+    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        stopwgcf
+        checkv4v6
+    else
+        checkv4v6
+    fi
+    if [[ -n $v4 && -z $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg2
+            wgcf4=$wg3
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg2
+            wgcf4=$wg3
+            installwgcf
+        fi
+    fi
+    if [[ -z $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg6
+            wgcf2=$wg2
+            wgcf3=$wg4
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg2
+            wgcf3=$wg4
+            installwgcf
+        fi
+    fi
+    if [[ -n $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg2
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg2
+            installwgcf
+        fi
+    fi
+}
+
+initwgcf(){
+    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wgcf/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    chmod +x /usr/local/bin/wgcf
+}
+
+installwgcf(){
+    if [[ $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_INSTALL[int]} epel-release
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
+        if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
+            wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/resolvconf -O /usr/sbin/resolvconf
+            chmod +x /usr/sbin/resolvconf
+        fi
+    fi
+    if [[ $SYSTEM == "Fedora" ]]; then
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
+    fi
+    if [[ $SYSTEM == "Debian" ]]; then
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo wget curl lsb-release bc htop screen python3 inetutils-ping
+        echo "deb http://deb.debian.org/debian $(lsb_release -sc)-backports main" | tee /etc/apt/sources.list.d/backports.list
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
+    fi
+    if [[ $SYSTEM == "Ubuntu" ]]; then
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop screen python3 inetutils-ping
+        ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
+    fi
+    
+    if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $VIRT =~ lxc|openvz ]]; then
+        wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wireguard-go/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
+        chmod +x /usr/bin/wireguard-go
+    fi
+
+    initwgcf
+    wgcfreg
+    checkmtu
+
+    cp -f wgcf-profile.conf /etc/wireguard/wgcf.conf >/dev/null 2>&1
+    mv -f wgcf-profile.conf /etc/wireguard/wgcf-profile.conf >/dev/null 2>&1
+    mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml >/dev/null 2>&1
+
+    wgcfconf
+
+    systemctl enable wg-quick@wgcf >/dev/null 2>&1
+    wgcfcheck
+}
+
+wgcfreg(){
+    if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
+        cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
+    fi
+
+    until [[ -a wgcf-account.toml ]]; do
+        yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
+        wgcf register --accept-tos
+        sleep 5
+    done
+    chmod +x wgcf-account.toml
+    
+    wgcf generate
+    chmod +x wgcf-profile.conf
+}
+
+switchconf(){
+    rm -rf /etc/wireguard/wgcf.conf
+    cp -f /etc/wireguard/wgcf-profile.conf /etc/wireguard/wgcf.conf >/dev/null 2>&1
+}
+
+wgcfconf(){
+    echo $wgcf1 | sh
+    echo $wgcf2 | sh
+    echo $wgcf3 | sh
+    echo $wgcf4 | sh
+}
+
+checkmtu(){
+    yellow "正在检测并设置MTU最佳值, 请稍等..."
+    checkv4v6
+    MTUy=1500
+    MTUc=10
+    if [[ -n ${v66} && -z ${v44} ]]; then
+        ping='ping6'
+        IP1='2606:4700:4700::1001'
+        IP2='2001:4860:4860::8888'
+    else
+        ping='ping'
+        IP1='1.1.1.1'
+        IP2='8.8.8.8'
+    fi
+    while true; do
+        if ${ping} -c1 -W1 -s$((${MTUy} - 28)) -Mdo ${IP1} >/dev/null 2>&1 || ${ping} -c1 -W1 -s$((${MTUy} - 28)) -Mdo ${IP2} >/dev/null 2>&1; then
+            MTUc=1
+            MTUy=$((${MTUy} + ${MTUc}))
+        else
+            MTUy=$((${MTUy} - ${MTUc}))
+            if [[ ${MTUc} = 1 ]]; then
+                break
+            fi
+        fi
+        if [[ ${MTUy} -le 1360 ]]; then
+            MTUy='1360'
+            break
+        fi
+    done
+    MTU=$((${MTUy} - 80))
+    sed -i "s/MTU.*/MTU = $MTU/g" wgcf-profile.conf
+    green "MTU 最佳值=$MTU 已设置完毕"
+}
+
+wgcfcheck(){
+    wg-quick down wgcf >/dev/null 2>&1
+    wg-quick up wgcf >/dev/null 2>&1
+    yellow "正在启动Wgcf-WARP"
+    checkwgcf
+    while [[ $i -le 4 ]]; do let i++
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        checkwgcf
+        if [[ $warpv4 =~ on|plus ]] ||[[ $warpv6 =~ on|plus ]]; then
+            green "Wgcf-WARP 已启动成功！"
+            break
+        else
+            red "Wgcf-WARP 启动失败！"
+        fi
+        checkwgcf
+        if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
+            green "安装Wgcf-WARP失败，建议如下："
+            yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
+            yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
+            yellow "3. 查看https://www.cloudflarestatus.com/,你当前VPS就近区域可能处于黄色的【Re-routed】状态"
+            exit 1
+        fi
+    done
+}
+
+checkwgcf(){
+    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+}
+
+startwgcf(){
+    wg-quick up wgcf >/dev/null 2>&1
+    systemctl enable wg-quick@wgcf >/dev/null 2>&1
+}
+
+stopwgcf(){
+    wg-quick down wgcf >/dev/null 2>&1
+    systemctl disable wg-quick@wgcf >/dev/null 2>&1
+}
+
 menu(){
     clear
     echo "#############################################################"
@@ -64,7 +323,7 @@ menu(){
     echo -e ""
     read -rp "请输入选项 [0-17]：" menuChoice
     case $menuChoice in
-        1) wgcfmode=4 && checkStatus ;;
+        1) wgcfv4 ;;
         2) wgcfmode=6 && checkStatus ;;
         3) wgcfmode=5 && checkStatus ;;
         4) switchWgcf ;;
