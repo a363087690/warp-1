@@ -77,6 +77,18 @@ archAffix(){
     esac
 }
 
+check_quota(){
+    if [[ "$CHECK_TYPE" = 1 ]]; then
+        QUOTA=$(grep -oP 'Quota: \K\d+' <<< $ACCOUNT)
+    else
+        ACCESS_TOKEN=$(grep 'access_token' /etc/wireguard/wgcf-account.toml | cut -d \' -f2)
+        DEVICE_ID=$(grep 'device_id' /etc/wireguard/wgcf-account.toml | cut -d \' -f2)
+        API=$(curl -s "https://api.cloudflareclient.com/v0a884/reg/$DEVICE_ID" -H "User-Agent: okhttp/3.12.1" -H "Authorization: Bearer $ACCESS_TOKEN")
+        QUOTA=$(grep -oP '"quota":\K\d+' <<< $API)
+    fi
+    [[ $QUOTA -gt 10000000000000 ]] && QUOTA="$(echo "scale=2; $QUOTA/1000000000000" | bc) TB" || QUOTA="$(echo "scale=2; $QUOTA/1000000000" | bc) GB"
+}
+
 checktun(){
     if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
         if [[ $VIRT == lxc ]]; then
