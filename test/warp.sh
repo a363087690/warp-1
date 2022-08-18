@@ -623,6 +623,60 @@ installcli(){
     fi
 }
 
+warpcli_changeport() {
+    if [[ $(warp-cli --accept-tos status) =~ Connected ]]; then
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+    fi
+    
+    read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+    [[ -z $WARPCliPort ]] && WARPCliPort=$(shuf -i 1000-65535 -n 1)
+    if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+        until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
+            if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+                yellow "你设置的端口目前已被占用，请重新输入端口"
+                read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+            fi
+        done
+    fi
+    warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
+    
+    yellow "正在启动Warp-Cli代理模式"
+    warp-cli --accept-tos connect >/dev/null 2>&1
+    warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+    
+    if [[ ! $(ss -nltp) =~ 'warp-svc' ]]; then
+        red "WARP-Cli代理模式启动失败！"
+        uninstallCli
+    else
+        green "WARP-Cli代理模式已启动成功并成功修改代理端口！"
+        echo ""
+        showIP
+    fi
+}
+
+switchcli(){
+    if [[ $(warp-cli --accept-tos status) =~ Connected ]]; then
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        green "WARP-Cli客户端关闭成功! "
+        exit 1
+    elif [[ $(warp-cli --accept-tos status) =~ Disconnected ]]; then
+        yellow "正在启动Warp-Cli"
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+        green "WARP-Cli客户端启动成功! "
+        exit 1
+    fi
+}
+
+uninstallcli(){
+    warp-cli --accept-tos disconnect >/dev/null 2>&1
+    warp-cli --accept-tos disable-always-on >/dev/null 2>&1
+    warp-cli --accept-tos delete >/dev/null 2>&1
+    ${PACKAGE_UNINSTALL[int]} cloudflare-warp
+    systemctl disable --now warp-svc >/dev/null 2>&1
+    green "WARP-Cli客户端已彻底卸载成功!"
+}
+
 showIP(){
     if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
         INTERFACE='--interface CloudflareWARP'
@@ -795,8 +849,8 @@ menu(){
         6) warpcli=1 && installcli ;;
         7) warpcli=2 && installcli ;;
         8) warpcli_changeport ;;
-        9) switchCli ;;
-        10) uninstallCli ;;
+        9) switchcli ;;
+        10) uninstallcli ;;
         11) installWireProxy ;;
         12) wireproxy_changeport ;;
         13) switchWireProxy ;;
