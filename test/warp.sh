@@ -90,6 +90,7 @@ wgcfv4(){
     else
         checkv4v6
     fi
+    
     if [[ -n $v4 && -z $v6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
