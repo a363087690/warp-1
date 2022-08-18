@@ -419,6 +419,18 @@ checkwgcf(){
     wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
 }
 
+switchwgcf(){
+    checkwgcf
+    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        startwgcf
+        green "Wgcf-WARP 已启动成功！"
+    fi
+    if [[ ! $wgcfv4 =~ on|plus ]] || [[ ! $wgcfv6 =~ on|plus ]]; then
+        stopwgcf
+        green "Wgcf-WARP 已停止成功！"
+    fi
+}
+
 startwgcf(){
     wg-quick up wgcf >/dev/null 2>&1
     systemctl enable wg-quick@wgcf >/dev/null 2>&1
@@ -427,6 +439,22 @@ startwgcf(){
 stopwgcf(){
     wg-quick down wgcf >/dev/null 2>&1
     systemctl disable wg-quick@wgcf >/dev/null 2>&1
+}
+
+uninstallwgcf(){
+    wg-quick down wgcf 2>/dev/null
+    systemctl disable wg-quick@wgcf 2>/dev/null
+    ${PACKAGE_UNINSTALL[int]} wireguard-tools wireguard-dkms
+    if [[ -z $(type -P wireproxy) ]]; then
+        rm -f /usr/local/bin/wgcf
+        rm -f /etc/wireguard/wgcf-account.toml
+    fi
+    rm -f /etc/wireguard/wgcf.conf
+    rm -f /usr/bin/wireguard-go
+    if [[ -e /etc/gai.conf ]]; then
+        sed -i '/^precedence[ ]*::ffff:0:0\/96[ ]*100/d' /etc/gai.conf
+    fi
+    green "Wgcf-WARP 已彻底卸载成功!"
 }
 
 menu(){
@@ -455,8 +483,8 @@ menu(){
         1) wgcfv4 ;;
         2) wgcfv6 ;;
         3) wgcfv4v6 ;;
-        4) switchWgcf ;;
-        5) uninstallWgcf ;;
+        4) switchwgcf ;;
+        5) uninstallwgcf ;;
         6) warpcli=2 && installCli ;;
         7) warpcli=1 && installCli ;;
         8) warpcli_changeport ;;
