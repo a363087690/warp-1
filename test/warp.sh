@@ -77,9 +77,48 @@ archAffix(){
     esac
 }
 
+checktun(){
+    if [[ ! $TUN =~ "in bad state"|"处于错误状态"|"ist in schlechter Verfassung" ]]; then
+        if [[ $VIRT == lxc ]]; then
+            if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]]; then
+                red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
+                exit 1
+            else
+                return 0
+            fi
+        elif [[ $VIRT == "openvz" ]]; then
+            wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/tun.sh && bash tun.sh
+        else
+            red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
+            exit 1
+        fi
+    fi
+}
+
 checkv4v6(){
     v6=$(curl -s6m8 https://ip.gs -k)
     v4=$(curl -s4m8 https://ip.gs -k)
+}
+
+initwgcf(){
+    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wgcf/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    chmod +x /usr/local/bin/wgcf
+}
+
+wgcfreg(){
+    if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
+        cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
+    fi
+
+    until [[ -a wgcf-account.toml ]]; do
+        yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
+        wgcf register --accept-tos
+        sleep 5
+    done
+    chmod +x wgcf-account.toml
+
+    wgcf generate
+    chmod +x wgcf-profile.conf
 }
 
 wgcfv4(){
@@ -282,6 +321,8 @@ installwgcf(){
     [[ $SYSTEM == "Debian" ]] && [[ ${OSID} -lt 10 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Debian 10及以上版本的系统" && exit 1
     [[ $SYSTEM == "Fedora" ]] && [[ ${OSID} -lt 29 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Fedora 29及以上版本的系统" && exit 1
     [[ $SYSTEM == "Ubuntu" ]] && [[ ${OSID} -lt 18 ]] && yellow "当前系统版本：${CMD} \nWgcf-WARP模式仅支持Ubuntu 16.04及以上版本的系统" && exit 1
+
+    checktun
 
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
