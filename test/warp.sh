@@ -90,7 +90,7 @@ wgcfv4(){
     else
         checkv4v6
     fi
-    
+
     if [[ -n $v4 && -z $v6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
@@ -144,6 +144,134 @@ wgcfv4(){
             wgcf1=$wg5
             wgcf2=$wg7
             wgcf3=$wg2
+            installwgcf
+        fi
+    fi
+}
+
+wgcfv6(){
+    checkwgcf
+    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        stopwgcf
+        checkv4v6
+    else
+        checkv4v6
+    fi
+    
+    if [[ -n $v4 && -z $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg1
+            wgcf3=$wg3
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg1
+            wgcf3=$wg3
+            installwgcf
+        fi
+    fi
+    if [[ -z $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg6
+            wgcf2=$wg8
+            wgcf3=$wg1
+            wgcf4=$wg4
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg8
+            wgcf3=$wg1
+            wgcf4=$wg4
+            installwgcf
+        fi
+    fi
+    if [[ -n $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg9
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg9
+            installwgcf
+        fi
+    fi
+}
+
+wgcfv4v6(){
+    checkwgcf
+    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        stopwgcf
+        checkv4v6
+    else
+        checkv4v6
+    fi
+    
+    if [[ -n $v4 && -z $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg3
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg7
+            wgcf3=$wg3
+            installwgcf
+        fi
+    fi
+    if [[ -z $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg6
+            wgcf2=$wg8
+            wgcf3=$wg4
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg6
+            wgcf2=$wg8
+            wgcf3=$wg4
+            installwgcf
+        fi
+    fi
+    if [[ -n $v4 && -n $v6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + WARP IPv6)"
+            stopwgcf
+            switchconf
+            wgcf1=$wg5
+            wgcf2=$wg9
+            wgcfconf
+            wgcfcheck
+        else
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg5
+            wgcf2=$wg9
             installwgcf
         fi
     fi
@@ -325,8 +453,8 @@ menu(){
     read -rp "请输入选项 [0-17]：" menuChoice
     case $menuChoice in
         1) wgcfv4 ;;
-        2) wgcfmode=6 && checkStatus ;;
-        3) wgcfmode=5 && checkStatus ;;
+        2) wgcfv6 ;;
+        3) wgcfv4v6 ;;
         4) switchWgcf ;;
         5) uninstallWgcf ;;
         6) warpcli=2 && installCli ;;
