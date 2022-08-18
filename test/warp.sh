@@ -494,6 +494,135 @@ uninstallwgcf(){
     green "Wgcf-WARP 已彻底卸载成功!"
 }
 
+installcli(){
+    [[ $SYSTEM == "CentOS" ]] && [[ ! ${OSID} =~ 8 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8系统" && exit 1
+    [[ $SYSTEM == "Debian" ]] && [[ ! ${OSID} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
+    [[ $SYSTEM == "Fedora" ]] && yellow "当前系统版本：${CMD} \nWARP-Cli暂时不支持Fedora系统" && exit 1
+    [[ $SYSTEM == "Ubuntu" ]] && [[ ! ${OSID} =~ 16|18|20|22 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Ubuntu 16.04/18.04/20.04/22.04系统" && exit 1
+    
+    [[ ! $(archAffix) == "amd64" ]] && red "WARP-Cli暂时不支持目前VPS的CPU架构, 请使用CPU架构为amd64的VPS" && exit 1
+    
+    checktun
+
+    checkwgcf
+    if [[ $wgcfv4 =~ on|plus ]] ||[[ $wgcfv6 =~ on|plus ]]; then
+        stopwgcf
+        checkv4v6
+        startwgcf
+    else
+        checkv4v6
+    fi
+
+    if [[ -z $v4 ]]; then
+        red "WARP-Cli暂时不支持纯IPv6的VPS，退出安装！"
+        exit 1
+    fi
+    
+    if [[ $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_INSTALL[int]} epel-release
+        ${PACKAGE_INSTALL[int]} sudo curl wget net-tools bc htop iputils screen python3
+        rpm -ivh http://pkg.cloudflareclient.com/cloudflare-release-el8.rpm
+        ${PACKAGE_INSTALL[int]} cloudflare-warp
+    fi
+    
+    if [[ $SYSTEM == "Debian" ]]; then
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3
+        [[ -z $(type -P gpg 2>/dev/null) ]] && ${PACKAGE_INSTALL[int]} gnupg
+        [[ -z $(apt list 2>/dev/null | grep apt-transport-https | grep installed) ]] && ${PACKAGE_INSTALL[int]} apt-transport-https
+        curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
+        echo "deb http://pkg.cloudflareclient.com/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} cloudflare-warp
+    fi
+    
+    if [[ $SYSTEM == "Ubuntu" ]]; then
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3
+        curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
+        echo "deb http://pkg.cloudflareclient.com/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} cloudflare-warp
+    fi
+    
+    warp-cli --accept-tos register >/dev/null 2>&1
+    if [[ $warpcli == 1 ]]; then
+        yellow "正在启动 WARP-Cli 全局模式"
+        warp-cli --accept-tos add-excluded-route 0.0.0.0/0 >/dev/null 2>&1
+        warp-cli --accept-tos add-excluded-route ::0/0 >/dev/null 2>&1
+        warp-cli --accept-tos set-mode warp >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+        sleep 5
+        ip -4 rule add from 172.16.0.2 lookup 51820
+        ip -4 route add default dev CloudflareWARP table 51820
+        ip -4 rule add table main suppress_prefixlength 0
+        IPv4=$(curl -s4m8 https://ip.gs/json --interface CloudflareWARP)
+        retry_time=0
+        until [[ -n $IPv4 ]]; do
+            retry_time=$((${retry_time} + 1))
+            red "启动 WARP-Cli 全局模式失败，正在尝试重启，重试次数：$retry_time"
+            warp-cli --accept-tos disconnect >/dev/null 2>&1
+            warp-cli --accept-tos disable-always-on >/dev/null 2>&1
+            ip -4 rule delete from 172.16.0.2 lookup 51820
+            ip -4 rule delete table main suppress_prefixlength 0
+            sleep 2
+            warp-cli --accept-tos connect >/dev/null 2>&1
+            warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+            sleep 5
+            ip -4 rule add from 172.16.0.2 lookup 51820
+            ip -4 route add default dev CloudflareWARP table 51820
+            ip -4 rule add table main suppress_prefixlength 0
+            if [[ $retry_time == 6 ]]; then
+                warp-cli --accept-tos disconnect >/dev/null 2>&1
+                warp-cli --accept-tos disable-always-on >/dev/null 2>&1
+                ip -4 rule delete from 172.16.0.2 lookup 51820
+                ip -4 rule delete table main suppress_prefixlength 0
+                red "由于WARP-Cli全局模式启动重试次数过多 ,已自动卸载WARP-Cli全局模式"
+                green "建议如下："
+                yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+                yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+                yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+                exit 1
+            fi
+        done
+        green "WARP-Cli全局模式已安装成功！"
+        echo ""
+        showIP
+    fi
+
+    if [[ $warpcli == 2 ]]; then
+        read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+        [[ -z $WARPCliPort ]] && WARPCliPort=$(shuf -i 1000-65535 -n 1)
+        if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+            until [[ -z $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; do
+                if [[ -n $(ss -ntlp | awk '{print $4}' | grep -w "$WARPCliPort") ]]; then
+                    yellow "你设置的端口目前已被占用，请重新输入端口"
+                    read -rp "请输入WARP-Cli使用的代理端口 (默认随机端口): " WARPCliPort
+                fi
+            done
+        fi
+        yellow "正在启动Warp-Cli代理模式"
+        warp-cli --accept-tos set-mode proxy >/dev/null 2>&1
+        warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        warp-cli --accept-tos enable-always-on >/dev/null 2>&1
+        sleep 2
+        if [[ ! $(ss -nltp) =~ 'warp-svc' ]]; then
+            red "由于WARP-Cli代理模式安装失败 ,已自动卸载WARP-Cli代理模式"
+            green "建议如下："
+            yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
+            yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
+            yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+            exit 1
+        else
+            green "WARP-Cli代理模式已启动成功!"
+            echo ""
+            showIP
+        fi
+    fi
+}
+
 showIP(){
     if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
         INTERFACE='--interface CloudflareWARP'
@@ -663,8 +792,8 @@ menu(){
         3) wgcfv4v6 ;;
         4) switchwgcf ;;
         5) uninstallwgcf ;;
-        6) warpcli=2 && installCli ;;
-        7) warpcli=1 && installCli ;;
+        6) warpcli=1 && installCli ;;
+        7) warpcli=2 && installCli ;;
         8) warpcli_changeport ;;
         9) switchCli ;;
         10) uninstallCli ;;
