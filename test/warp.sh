@@ -277,11 +277,6 @@ wgcfv4v6(){
     fi
 }
 
-initwgcf(){
-    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wgcf/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
-    chmod +x /usr/local/bin/wgcf
-}
-
 installwgcf(){
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
@@ -324,22 +319,6 @@ installwgcf(){
 
     systemctl enable wg-quick@wgcf >/dev/null 2>&1
     wgcfcheck
-}
-
-wgcfreg(){
-    if [[ -f /etc/wireguard/wgcf-account.toml ]]; then
-        cp -f /etc/wireguard/wgcf-account.toml /root/wgcf-account.toml
-    fi
-
-    until [[ -a wgcf-account.toml ]]; do
-        yellow "正在向CloudFlare WARP注册账号, 如提示429 Too Many Requests错误请耐心等待重试注册即可"
-        wgcf register --accept-tos
-        sleep 5
-    done
-    chmod +x wgcf-account.toml
-    
-    wgcf generate
-    chmod +x wgcf-profile.conf
 }
 
 switchconf(){
@@ -388,6 +367,11 @@ checkmtu(){
     green "MTU 最佳值=$MTU 已设置完毕"
 }
 
+checkwgcf(){
+    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+}
+
 wgcfcheck(){
     wg-quick down wgcf >/dev/null 2>&1
     wg-quick up wgcf >/dev/null 2>&1
@@ -412,11 +396,6 @@ wgcfcheck(){
             exit 1
         fi
     done
-}
-
-checkwgcf(){
-    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
 }
 
 switchwgcf(){
