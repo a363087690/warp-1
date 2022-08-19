@@ -154,6 +154,7 @@ wgcfv44(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
             wgcf1=$wg5
@@ -174,6 +175,7 @@ wgcfv44(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg6
@@ -193,6 +195,7 @@ wgcfv44(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5
@@ -223,6 +226,7 @@ wgcfv66(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -243,6 +247,7 @@ wgcfv66(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
             wgcf1=$wg6
@@ -262,6 +267,7 @@ wgcfv66(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -291,6 +297,7 @@ wgcfv46(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -310,6 +317,7 @@ wgcfv46(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6
@@ -328,6 +336,7 @@ wgcfv46(){
             wgcfconf
             wgcfcheck
             showIP
+            exit 1
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5
@@ -442,18 +451,19 @@ checkwgcf(){
 
 wgcfcheck(){
     yellow "正在启动Wgcf-WARP"
-    while [[ $i -le 4 ]]; do let i++
+    i=0
+    while [ $i -le 4 ]; do let i++
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
         checkwgcf
-        if [[ $warpv4 =~ on|plus ]] ||[[ $warpv6 =~ on|plus ]]; then
+        if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
             green "Wgcf-WARP 已启动成功！"
             break
         else
             red "Wgcf-WARP 启动失败！"
         fi
         checkwgcf
-        if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
+        if [[ ! $wgcfv4 =~ on|plus ]] || [[ ! $wgcfv6 =~ on|plus ]]; then
             green "安装Wgcf-WARP失败，建议如下："
             yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
             yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
