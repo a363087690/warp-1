@@ -442,7 +442,7 @@ checkwgcf(){
 
 wgcfcheck(){
     yellow "正在启动Wgcf-WARP"
-    while [ $i -le 4 ]; do let i++
+    while [[ $i -le 4 ]]; do let i++
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
         checkwgcf
