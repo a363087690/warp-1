@@ -113,7 +113,7 @@ checkv4v6(){
 }
 
 initwgcf(){
-    wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wgcf/wgcf_2.2.15_linux_$(archAffix) -O /usr/local/bin/wgcf
+    wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/taffychan/warp/files/wgcf/wgcf-latest-linux-$(archAffix) -O /usr/local/bin/wgcf
     chmod +x /usr/local/bin/wgcf
 }
 
