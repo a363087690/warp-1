@@ -309,6 +309,10 @@ installwgcf(){
     wgcfreg
     checkmtu
 
+    if [[ ! -d "/etc/wireguard" ]]; then
+        mkdir /etc/wireguard
+    fi
+    
     cp -f wgcf-profile.conf /etc/wireguard/wgcf.conf >/dev/null 2>&1
     mv -f wgcf-profile.conf /etc/wireguard/wgcf-profile.conf >/dev/null 2>&1
     mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml >/dev/null 2>&1
@@ -667,6 +671,10 @@ installWireProxy(){
     else
         WireproxyEndpoint="162.159.193.10:2408"
     fi
+
+    if [[ ! -d "/etc/wireguard" ]]; then
+        mkdir /etc/wireguard
+    fi
     
     cat <<EOF > /etc/wireguard/proxy.conf
 [Interface]
@@ -694,8 +702,8 @@ ExecStart=/usr/local/bin/wireproxy -c /etc/wireguard/proxy.conf
 Restart=always
 TEXT
     
-    rm -f wgcf-profile.conf
-    mv wgcf-account.toml /etc/wireguard/wgcf-account.toml
+    mv -f wgcf-profile.conf /etc/wireguard/wgcf-profile.conf
+    mv -f wgcf-account.toml /etc/wireguard/wgcf-account.toml
     
     yellow "正在启动 WireProxy-WARP 代理模式"
     systemctl start wireproxy-warp
