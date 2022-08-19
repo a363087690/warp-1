@@ -151,7 +151,7 @@ wgcfv44(){
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg3
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -z $v4 && -n $v6 ]]; then
@@ -163,7 +163,7 @@ wgcfv44(){
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -n $v4 && -n $v6 ]]; then
@@ -175,7 +175,7 @@ wgcfv44(){
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
 }
@@ -198,7 +198,7 @@ wgcfv66(){
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg1 && wgcf3=$wg3
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -z $v4 && -n $v6 ]]; then
@@ -210,7 +210,7 @@ wgcfv66(){
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
             wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -n $v4 && -n $v6 ]]; then
@@ -222,7 +222,7 @@ wgcfv66(){
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg8 && wgcf3=$wg1
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
 }
@@ -245,7 +245,7 @@ wgcfv46(){
         else
             yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg3
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -z $v4 && -n $v6 ]]; then
@@ -257,7 +257,7 @@ wgcfv46(){
         else
             yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
     if [[ -n $v4 && -n $v6 ]]; then
@@ -269,7 +269,7 @@ wgcfv46(){
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg9
-            installwgcf
+            installwgcf && exit 1
         fi
     fi
 }
