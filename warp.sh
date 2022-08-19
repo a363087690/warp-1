@@ -634,7 +634,7 @@ installWireProxy(){
         ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3
     fi
     
-    wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
+    wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
     chmod +x /usr/local/bin/wireproxy
     
     initwgcf
