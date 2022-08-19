@@ -24,6 +24,6 @@ jobs:
           git push
       - name: Refreshing Jsdelivr
         run: |
-          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf_latest_linux_amd64
-          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf_latest_linux_arm64
-          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf_latest_linux_s390x
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf/wgcf-latest-linux-amd64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf/wgcf-latest-linux-arm64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wgcf/wgcf-latest-linux-s390x
