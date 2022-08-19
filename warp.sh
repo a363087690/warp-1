@@ -391,7 +391,7 @@ wgcfcheck(){
             red "Wgcf-WARP 启动失败！"
         fi
         checkwgcf
-        if [[ ! $wgcfv4 =~ on|plus ]] || [[ ! $wgcfv6 =~ on|plus ]]; then
+        if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
             green "安装Wgcf-WARP失败，建议如下："
             yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
             yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
