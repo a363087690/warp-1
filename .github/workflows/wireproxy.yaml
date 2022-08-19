@@ -1,0 +1,29 @@
+name: Fetch wireproxy latest version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 30 12 * * *
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checking and fetching wgcf latest version
+        run: |
+          wget -N https://raw.githubusercontent.com/taffychan/warp/master/.github/wireproxy.sh
+          bash wgcf.sh
+      - name: Git uploading
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Uploaded by Github Actions, Date: $(date)"
+          git push
+      - name: Refreshing Jsdelivr
+        run: |
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-amd64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-arm64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-s390x
