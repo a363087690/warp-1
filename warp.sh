@@ -280,7 +280,7 @@ installwgcf(){
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
         if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
-            wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/resolvconf -O /usr/sbin/resolvconf
+            wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
     fi
