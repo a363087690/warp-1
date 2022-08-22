@@ -99,7 +99,7 @@ checktun(){
                 return 0
             fi
         elif [[ $VIRT == "openvz" ]]; then
-            wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/tun.sh && bash tun.sh
+            wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/taffychan/warp/files/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
             exit 1
@@ -301,7 +301,7 @@ installwgcf(){
     fi
     
     if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $VIRT =~ lxc|openvz ]]; then
-        wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wireguard-go/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
+        wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/taffychan/warp/files/wireguard-go/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
         chmod +x /usr/bin/wireguard-go
     fi
 
