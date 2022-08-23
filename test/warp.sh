@@ -119,7 +119,7 @@ checkStack(){
         ping -c2 -W3 162.159.193.10 >/dev/null 2>&1 && out4=1
     fi
     if [[ "$lan6" =~ ^[0-9a-z:]+$ ]]; then
-        ping -c2 -W3 2606:4700:4700::1111 >/dev/null 2>&1 && out6=1
+        ping6 -c2 -w10 2606:4700:4700::1111 >/dev/null 2>&1 && out6=1
     fi
 }
 
@@ -148,12 +148,12 @@ wgcfv44(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
 
-    if [[ -n $v4 && -z $v6 ]]; then
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
             stopwgcf && switchconf
@@ -164,30 +164,18 @@ wgcfv44(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
-            checkStack
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             stopwgcf && switchconf
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
-            fi
+            wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
             wgcfconf && wgcfcheck && showIP
         else
-            checkStack
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
-            fi
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             stopwgcf && switchconf
@@ -198,6 +186,17 @@ wgcfv44(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2
             installwgcf
         fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
+            installwgcf
+        fi
     fi
 }
 
@@ -205,12 +204,12 @@ wgcfv66(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
-    
-    if [[ -n $v4 && -z $v6 ]]; then
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -221,30 +220,18 @@ wgcfv66(){
             wgcf1=$wg5 && wgcf2=$wg1 && wgcf3=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
-            checkStack
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
             stopwgcf && switchconf
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
-            fi
+            wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
             wgcfconf && wgcfcheck && showIP
         else
-            checkStack
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
-            fi
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -255,6 +242,17 @@ wgcfv66(){
             wgcf1=$wg5 && wgcf2=$wg8 && wgcf3=$wg1
             installwgcf
         fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
+            installwgcf
+        fi
     fi
 }
 
@@ -262,12 +260,12 @@ wgcfv46(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
-    
-    if [[ -n $v4 && -z $v6 ]]; then
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -278,30 +276,18 @@ wgcfv46(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
-            checkStack
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
-            fi
+            wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
             wgcfconf && wgcfcheck && showIP
         else
-            checkStack
-            if [[ -n $lan4 && -z $out4 ]]; then
-                yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
-            else
-                yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-                wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
-            fi
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -310,6 +296,17 @@ wgcfv46(){
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg9
+            installwgcf
+        fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
             installwgcf
         fi
     fi
