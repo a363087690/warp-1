@@ -718,14 +718,13 @@ installWireProxy(){
 
     if [[ ! -d "/etc/wireguard" ]]; then
         mkdir /etc/wireguard
-    fi
-    
+    fi    
     cat <<EOF > /etc/wireguard/proxy.conf
 [Interface]
 Address = 172.16.0.2/32
 MTU = $MTU
 PrivateKey = $WgcfPrivateKey
-DNS = 1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
+DNS = 1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
 [Peer]
 PublicKey = $WgcfPublicKey
 Endpoint = $WireproxyEndpoint
