@@ -79,6 +79,7 @@ archAffix(){
 
 check_quota(){
     if [[ "$CHECK_TYPE" = 1 ]]; then
+        ACCOUNT=$(warp-cli --accept-tos account 2>/dev/null)
         QUOTA=$(grep -oP 'Quota: \K\d+' <<< $ACCOUNT)
     else
         ACCESS_TOKEN=$(grep 'access_token' /etc/wireguard/wgcf-account.toml | cut -d \' -f2)
