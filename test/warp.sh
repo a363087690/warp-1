@@ -915,7 +915,6 @@ warpsw1(){
             sed -i "s#PublicKey.*#PublicKey = $warpPublicKey#g" /etc/wireguard/proxy.conf;
             sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/proxy.conf;
             sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
-            rm -f wgcf-profile.conf
             systemctl start wireproxy-warp
             yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
             WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
@@ -927,6 +926,7 @@ warpsw1(){
                 exit 1
             fi
         fi
+        showIP
     fi
     if [[ $accountInput == 2 ]]; then
         cd /etc/wireguard
@@ -991,7 +991,7 @@ warpsw1(){
                     red "切换 WireProxy-WARP 代理模式账户类型失败，请卸载后重新切换账户！"
                 fi
             fi
-            rm -f wgcf-profile.conf
+            showIP
         else
             red "未输入WARP账户许可证密钥, 无法升级！"
         fi
@@ -1086,6 +1086,7 @@ warpsw1(){
                 done
                 green "WireProxy-WARP代理模式 账户类型切换为 WARP Teams 成功！"
             fi
+            showIP
         else
             red "已退出WARP Teams账号升级过程!"
         fi
@@ -1108,6 +1109,7 @@ warpsw2(){
     warp-cli --accept-tos connect >/dev/null 2>&1
     if [[ $(warp-cli --accept-tos account) =~ Limited ]]; then
         green "WARP-Cli 账户类型切换为 WARP+ 成功！"
+        showIP
     else
         red "WARP+账户启用失败, 已自动降级至WARP免费版账户"
     fi
