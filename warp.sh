@@ -870,7 +870,7 @@ warpsw1(){
         if [[ -n $(type -P wgcf) && -n $(type -P wg-quick) ]]; then
             wg-quick down wgcf >/dev/null 2>&1
             cd /etc/wireguard
-            rm -f wgcf-account.toml
+            rm -f wgcf-account.toml wgcf-profile.conf
             until [[ -a wgcf-account.toml ]]; do
                 wgcf register --accept-tos
                 sleep 5
@@ -915,7 +915,6 @@ warpsw1(){
             sed -i "s#PublicKey.*#PublicKey = $warpPublicKey#g" /etc/wireguard/proxy.conf;
             sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/proxy.conf;
             sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
-            rm -f wgcf-profile.conf
             systemctl start wireproxy-warp
             yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
             WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
@@ -927,6 +926,7 @@ warpsw1(){
                 exit 1
             fi
         fi
+        showIP
     fi
     if [[ $accountInput == 2 ]]; then
         cd /etc/wireguard
@@ -937,6 +937,11 @@ warpsw1(){
             done
         fi
         chmod +x wgcf-account.toml
+        yellow "获取CloudFlare WARP账号密钥信息方法: "
+        green "电脑: 下载并安装CloudFlare WARP→设置→偏好设置→账户→复制密钥到脚本中"
+        green "手机: 下载并安装1.1.1.1 APP→菜单→账户→复制密钥到脚本中"
+        echo ""
+        yellow "重要：请确保手机或电脑的1.1.1.1 APP的账户状态为WARP+！"
         read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
         until [[ -z $warpkey || $warpkey =~ ^[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}$ ]]; do
             red "WARP账户许可证密钥输入错误，请重新输入！"
@@ -945,6 +950,7 @@ warpsw1(){
         if [[ -n $warpkey ]]; then
             sed -i "s/license_key.*/license_key = \"$warpkey\"/g" wgcf-account.toml
             read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
+            rm -f wgcf-profile.conf
             green "注册WARP+账户中, 如下方显示:400 Bad Request, 则使用WARP免费版账户"
             if [[ -n $devicename ]]; then
                 wgcf update --name $(echo $devicename | sed s/[[:space:]]/_/g) > /etc/wireguard/info.log 2>&1
@@ -991,7 +997,7 @@ warpsw1(){
                     red "切换 WireProxy-WARP 代理模式账户类型失败，请卸载后重新切换账户！"
                 fi
             fi
-            rm -f wgcf-profile.conf
+            showIP
         else
             red "未输入WARP账户许可证密钥, 无法升级！"
         fi
@@ -1009,7 +1015,6 @@ warpsw1(){
         yellow "PrivateKey: $wpteamprivatekey"
         yellow "IPv4地址: $wpteamv4address"
         yellow "IPv6地址: $wpteamv6address"
-        echo ""
         read -rp "确认配置信息信息正确请输入y, 其他按键退出升级过程: " wpteamconfirm
         if [[ $wpteamconfirm =~ "y"|"Y" ]]; then
             if [[ -n $(type -P wgcf) && -n $(type -P wg-quick) ]]; then
@@ -1018,6 +1023,10 @@ warpsw1(){
                 sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf.conf;
                 sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf.conf;
                 sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf.conf;
+                sed -i "s#PublicKey.*#PublicKey = $wpteampublickey#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                 wg-quick up wgcf >/dev/null 2>&1
                 yellow "正在检查WARP Teams账户连通性, 请稍等..."
                 WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
@@ -1029,6 +1038,7 @@ warpsw1(){
                     if [[ $retry_time == 4 ]]; then
                         wg-quick down wgcf >/dev/null 2>&1
                         cd /etc/wireguard
+                        rm -f wgcf-profile.conf
                         wgcf generate
                         chmod +x wgcf-profile.conf
                         warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
@@ -1039,6 +1049,10 @@ warpsw1(){
                         sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
+                        sed -i "s#PublicKey.*#PublicKey = $wpteampublickey#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                         rm -f wgcf-profile.conf
                         wg-quick up wgcf >/dev/null 2>&1
                         red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
@@ -1077,6 +1091,7 @@ warpsw1(){
                 done
                 green "WireProxy-WARP代理模式 账户类型切换为 WARP Teams 成功！"
             fi
+            showIP
         else
             red "已退出WARP Teams账号升级过程!"
         fi
@@ -1086,6 +1101,11 @@ warpsw1(){
 warpsw2(){
     warp-cli --accept-tos disconnect >/dev/null 2>&1
     warp-cli --accept-tos register >/dev/null 2>&1
+    yellow "获取CloudFlare WARP账号密钥信息方法: "
+    green "电脑: 下载并安装CloudFlare WARP→设置→偏好设置→账户→复制密钥到脚本中"
+    green "手机: 下载并安装1.1.1.1 APP→菜单→账户→复制密钥到脚本中"
+    echo ""
+    yellow "重要：请确保手机或电脑的1.1.1.1 APP的账户状态为WARP+！"
     read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
     until [[ -z $warpkey || $warpkey =~ ^[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}-[A-Z0-9a-z]{8}$ ]]; do
         red "WARP账户许可证密钥输入错误，请重新输入！"
@@ -1099,6 +1119,7 @@ warpsw2(){
     warp-cli --accept-tos connect >/dev/null 2>&1
     if [[ $(warp-cli --accept-tos account) =~ Limited ]]; then
         green "WARP-Cli 账户类型切换为 WARP+ 成功！"
+        showIP
     else
         red "WARP+账户启用失败, 已自动降级至WARP免费版账户"
     fi
@@ -1280,16 +1301,16 @@ menu(){
     echo -e "# ${GREEN}GitHub${PLAIN}: https://github.com/taffychan                      #"
     echo "#############################################################"
     echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN} | ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
-    echo -e " ${GREEN}3.${PLAIN} 安装 Wgcf-WARP 全局双栈模式             | ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                    | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli 代理模式"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                          | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
+    echo -e " ${GREEN}1.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN} | ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
+    echo -e " ${GREEN}3.${PLAIN} 安装/切换 Wgcf-WARP 全局双栈模式             | ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
+    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                         | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli"
+    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                               | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式           | ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口   | ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式     | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}           | ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式                | ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
+    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口        | ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
+    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
