@@ -1018,6 +1018,10 @@ warpsw1(){
                 sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf.conf;
                 sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf.conf;
                 sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf.conf;
+                sed -i "s#PublicKey.*#PublicKey = $wpteampublickey#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
+                sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                 wg-quick up wgcf >/dev/null 2>&1
                 yellow "正在检查WARP Teams账户连通性, 请稍等..."
                 WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
@@ -1029,6 +1033,7 @@ warpsw1(){
                     if [[ $retry_time == 4 ]]; then
                         wg-quick down wgcf >/dev/null 2>&1
                         cd /etc/wireguard
+                        rm -f wgcf-profile.conf
                         wgcf generate
                         chmod +x wgcf-profile.conf
                         warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
@@ -1039,6 +1044,10 @@ warpsw1(){
                         sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
+                        sed -i "s#PublicKey.*#PublicKey = $wpteampublickey#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
+                        sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                         rm -f wgcf-profile.conf
                         wg-quick up wgcf >/dev/null 2>&1
                         red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
