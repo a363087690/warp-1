@@ -420,7 +420,7 @@ checkwgcf(){
 }
 
 wgcfcheck(){
-    yellow "正在启动Wgcf-WARP"
+    yellow "正在启动 Wgcf-WARP"
     i=0
     while [ $i -le 4 ]; do let i++
         wg-quick down wgcf >/dev/null 2>&1
@@ -920,7 +920,7 @@ warpsw1(){
             WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
             sleep 2
             if [[ $WireProxyStatus == "on" ]]; then
-                green "WireProxy-WARP代理模式 账户类型切换为 WARP 免费账户 成功！"
+                green "WireProxy-WARP 代理模式 账户类型切换为 WARP 免费账户 成功！"
             else
                 red "切换 WireProxy-WARP 代理模式账户类型失败，请尝试卸载后重装以重新切换账户！"
                 exit 1
@@ -1129,7 +1129,7 @@ warpsw(){
     yellow "请选择需要切换WARP账户的WARP客户端:"
     echo -e " ${GREEN}1.${PLAIN} Wgcf-WARP 和 WireProxy-WARP 代理模式"
     echo -e " ${GREEN}2.${PLAIN} WARP-Cli ${RED}(目前仅支持升级WARP+账户)${PLAIN}"
-    read -rp "请选择客户端 [1-3]: " clientInput
+    read -rp "请选择客户端 [1-2]: " clientInput
     case "$clientInput" in
         1 ) warpsw1 ;;
         2 ) warpsw2 ;;
