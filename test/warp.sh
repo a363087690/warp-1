@@ -870,7 +870,7 @@ warpsw1(){
         if [[ -n $(type -P wgcf) && -n $(type -P wg-quick) ]]; then
             wg-quick down wgcf >/dev/null 2>&1
             cd /etc/wireguard
-            rm -f wgcf-account.toml
+            rm -f wgcf-account.toml wgcf-profile.conf
             until [[ -a wgcf-account.toml ]]; do
                 wgcf register --accept-tos
                 sleep 5
