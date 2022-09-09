@@ -54,8 +54,8 @@ wg2="sed -i '/\:\:\/0/d' /etc/wireguard/wgcf.conf"
 wg3="sed -i 's/engage.cloudflareclient.com/162.159.193.10/g' /etc/wireguard/wgcf.conf"
 wg4="sed -i 's/engage.cloudflareclient.com/[2606:4700:d0::a29f:c001]/g' /etc/wireguard/wgcf.conf"
 # Wgcf DNS Servers
-wg5="sed -i 's/1.1.1.1/1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844/g' /etc/wireguard/wgcf.conf"
-wg6="sed -i 's/1.1.1.1/2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,8.8.8.8,8.8.4.4/g' /etc/wireguard/wgcf.conf"
+wg5="sed -i 's/1.1.1.1/1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844/g' /etc/wireguard/wgcf.conf"
+wg6="sed -i 's/1.1.1.1/2606:4700:4700::1111,2606:4700:4700::1001,2001:4860:4860::8888,2001:4860:4860::8844,1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4/g' /etc/wireguard/wgcf.conf"
 # Wgcf 允许外部IP地址
 wg7='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
 wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
@@ -99,7 +99,7 @@ checktun(){
                 return 0
             fi
         elif [[ $VIRT == "openvz" ]]; then
-            wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/tun.sh && bash tun.sh
+            wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/taffychan/warp/files/tun.sh && bash tun.sh
         else
             red "检测到未开启TUN模块, 请到VPS后台控制面板处开启"
             exit 1
@@ -110,6 +110,17 @@ checktun(){
 checkv4v6(){
     v6=$(curl -s6m8 https://ip.gs -k)
     v4=$(curl -s4m8 https://ip.gs -k)
+}
+
+checkStack(){
+    lan4=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+')
+    lan6=$(ip route get 2606:4700:4700::1111 2>/dev/null | grep -oP 'src \K\S+')
+    if [[ "$lan4" =~ ^[0-9.]+$ ]]; then
+        ping -c2 -W3 162.159.193.10 >/dev/null 2>&1 && out4=1
+    fi
+    if [[ "$lan6" =~ ^[0-9a-z:]+$ ]]; then
+        ping6 -c2 -w10 2606:4700:4700::1111 >/dev/null 2>&1 && out6=1
+    fi
 }
 
 initwgcf(){
@@ -137,12 +148,12 @@ wgcfv44(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
 
-    if [[ -n $v4 && -z $v6 ]]; then
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
             stopwgcf && switchconf
@@ -153,7 +164,7 @@ wgcfv44(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             stopwgcf && switchconf
@@ -164,7 +175,7 @@ wgcfv44(){
             wgcf1=$wg6 && wgcf2=$wg2 && wgcf3=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
             stopwgcf && switchconf
@@ -175,6 +186,17 @@ wgcfv44(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg2
             installwgcf
         fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg7 && wgcf3=$wg2 && wgcf4=$wg4
+            installwgcf
+        fi
     fi
 }
 
@@ -182,12 +204,12 @@ wgcfv66(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
-    
-    if [[ -n $v4 && -z $v6 ]]; then
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -198,7 +220,7 @@ wgcfv66(){
             wgcf1=$wg5 && wgcf2=$wg1 && wgcf3=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
             stopwgcf && switchconf
@@ -209,7 +231,7 @@ wgcfv66(){
             wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg1 && wgcf4=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -220,6 +242,17 @@ wgcfv66(){
             wgcf1=$wg5 && wgcf2=$wg8 && wgcf3=$wg1
             installwgcf
         fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg1 && wgcf4=$wg4
+            installwgcf
+        fi
     fi
 }
 
@@ -227,12 +260,12 @@ wgcfv46(){
     checkwgcf
     if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
         stopwgcf
-        checkv4v6
+        checkStack
     else
-        checkv4v6
+        checkStack
     fi
-    
-    if [[ -n $v4 && -z $v6 ]]; then
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -243,7 +276,7 @@ wgcfv46(){
             wgcf1=$wg5 && wgcf2=$wg7 && wgcf3=$wg3
             installwgcf
         fi
-    elif [[ -z $v4 && -n $v6 ]]; then
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -254,7 +287,7 @@ wgcfv46(){
             wgcf1=$wg6 && wgcf2=$wg8 && wgcf3=$wg4
             installwgcf
         fi
-    elif [[ -n $v4 && -n $v6 ]]; then
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
         if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + WARP IPv6)"
             stopwgcf && switchconf
@@ -263,6 +296,17 @@ wgcfv46(){
         else
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
             wgcf1=$wg5 && wgcf2=$wg9
+            installwgcf
+        fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            stopwgcf && switchconf
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
+            wgcfconf && wgcfcheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
+            wgcf1=$wg6 && wgcf2=$wg9 && wgcf3=$wg4
             installwgcf
         fi
     fi
@@ -280,7 +324,7 @@ installwgcf(){
         ${PACKAGE_INSTALL[int]} epel-release
         ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
         if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
-            wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/resolvconf -O /usr/sbin/resolvconf
+            wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
     fi
@@ -301,7 +345,7 @@ installwgcf(){
     fi
     
     if [[ $main -lt 5 ]] || [[ $minor -lt 6 ]] || [[ $VIRT =~ lxc|openvz ]]; then
-        wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/files/wireguard-go/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
+        wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/taffychan/warp/files/wireguard-go/wireguard-go-$(archAffix) -O /usr/bin/wireguard-go
         chmod +x /usr/bin/wireguard-go
     fi
 
@@ -621,12 +665,6 @@ uninstallcli(){
 }
 
 installWireProxy(){
-    if [[ $c4 == "Hong Kong" || $c6 == "Hong Kong" ]]; then
-        red "检测到地区为 Hong Kong 的VPS!"
-        yellow "由于 CloudFlare 对 Hong Kong 屏蔽了 Wgcf, 因此无法使用 WireProxy-WARP 代理模式。请使用其他地区的VPS"
-        exit 1
-    fi
-    
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} sudo curl wget bc htop iputils screen python3
     else
@@ -634,7 +672,7 @@ installWireProxy(){
         ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3
     fi
     
-    wget -N https://raw.githubusercontent.com/taffychan/warp/main/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
+    wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
     chmod +x /usr/local/bin/wireproxy
     
     initwgcf
@@ -674,14 +712,13 @@ installWireProxy(){
 
     if [[ ! -d "/etc/wireguard" ]]; then
         mkdir /etc/wireguard
-    fi
-    
+    fi    
     cat <<EOF > /etc/wireguard/proxy.conf
 [Interface]
 Address = 172.16.0.2/32
 MTU = $MTU
 PrivateKey = $WgcfPrivateKey
-DNS = 1.1.1.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
+DNS = 1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,2606:4700:4700::1001,2606:4700:4700::1111,2001:4860:4860::8888,2001:4860:4860::8844
 [Peer]
 PublicKey = $WgcfPublicKey
 Endpoint = $WireproxyEndpoint
