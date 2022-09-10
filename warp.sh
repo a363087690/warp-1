@@ -894,6 +894,7 @@ warpsw1(){
             if [[ $WgcfV4Status == "on" ]] || [[ $WgcfV6Status == "on" ]]; then
                 green "Wgcf-WARP 账户类型切换为 WARP 免费账户 成功！"
             else
+                wg-quick down wgcf >/dev/null 2>&1
                 red "切换 Wgcf-WARP 账户类型失败，请尝试卸载后重装以重新切换账户！"
                 exit 1
             fi
@@ -922,7 +923,7 @@ warpsw1(){
             if [[ $WireProxyStatus == "on" ]]; then
                 green "WireProxy-WARP 代理模式 账户类型切换为 WARP 免费账户 成功！"
             else
-                red "切换 WireProxy-WARP 代理模式账户类型失败，请尝试卸载后重装以重新切换账户！"
+                red "切换 WireProxy-WARP 代理模式账户类型失败，请卸载后重新切换账户！"
                 exit 1
             fi
         fi
@@ -976,6 +977,7 @@ warpsw1(){
                 if [[ $WgcfV4Status == "plus" ]] || [[ $WgcfV6Status == "plus" ]]; then
                     green "Wgcf-WARP 账户类型切换为 WARP+ 成功！"
                 else
+                    wg-quick down wgcf >/dev/null 2>&1
                     red "切换 Wgcf-WARP 账户类型失败，请卸载后重新切换账户！"
                 fi
             fi
