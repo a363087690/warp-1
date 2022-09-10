@@ -996,7 +996,9 @@ warpsw1(){
     fi
     if [[ $accountInput == 3 ]]; then
         read -rp "请复制粘贴WARP Teams账户配置文件链接: " teamconfigurl
-        [[ -z $teamconfigurl ]] && red "未输入配置文件链接，无法升级！" && exit 1
+        if [[ -z $teamconfigurl ]]; then
+            teamconfigurl="https://raw.githubusercontent.com/taffychan/warp/main/files/publicteam.xml"
+        fi
         teamsconfig=$(curl -sSL "$teamconfigurl" | sed "s/\"/\&quot;/g")
         wpteampublickey=$(expr "$teamsconfig" : '.*public_key&quot;:&quot;\([^&]*\).*')
         wpteamprivatekey=$(expr "$teamsconfig" : '.*private_key&quot;>\([^<]*\).*')
