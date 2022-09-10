@@ -867,17 +867,17 @@ warpsw1(){
     green "3. WARP Teams"
     read -rp "请选择账户类型 [1-3]: " accountInput
     if [[ $accountInput == 1 ]]; then
+        cd /etc/wireguard
+        rm -f wgcf-account.toml wgcf-profile.conf
+        until [[ -a wgcf-account.toml ]]; do
+            wgcf register --accept-tos
+            sleep 5
+        done
+        chmod +x wgcf-account.toml
+        wgcf generate
+        chmod +x wgcf-profile.conf
         if [[ -n $(type -P wgcf) && -n $(type -P wg-quick) ]]; then
             wg-quick down wgcf >/dev/null 2>&1
-            cd /etc/wireguard
-            rm -f wgcf-account.toml wgcf-profile.conf
-            until [[ -a wgcf-account.toml ]]; do
-                wgcf register --accept-tos
-                sleep 5
-            done
-            chmod +x wgcf-account.toml
-            wgcf generate
-            chmod +x wgcf-profile.conf
             warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
             warpPrivateKey=$(grep PrivateKey wgcf-profile.conf | sed "s/PrivateKey = //g")
             warpIPv4Address=$(grep "Address = 172" wgcf-profile.conf | sed "s/Address = //g")
@@ -886,7 +886,6 @@ warpsw1(){
             sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/wgcf.conf;
             sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
             sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
-            rm -f wgcf-profile.conf
             wg-quick up wgcf >/dev/null 2>&1
             yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
             WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
@@ -901,15 +900,6 @@ warpsw1(){
         fi
         if [[ -n $(type -P wireproxy) ]]; then
             systemctl stop wireproxy-warp
-            cd /etc/wireguard
-            rm -f wgcf-account.toml
-            until [[ -a wgcf-account.toml ]]; do
-                wgcf register --accept-tos
-                sleep 5
-            done
-            chmod +x wgcf-account.toml
-            wgcf generate
-            chmod +x wgcf-profile.conf
             warpIPv4Address=$(grep "Address = 172" wgcf-profile.conf | sed "s/Address = //g")
             warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
             warpPrivateKey=$(grep PrivateKey wgcf-profile.conf | sed "s/PrivateKey = //g")
