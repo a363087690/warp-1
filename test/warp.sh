@@ -979,7 +979,24 @@ warpsw1(){
                     green "Wgcf-WARP 账户类型切换为 WARP+ 成功！"
                 else
                     wg-quick down wgcf >/dev/null 2>&1
-                    red "切换 Wgcf-WARP 账户类型失败，请卸载后重新切换账户！"
+                    cd /etc/wireguard
+                    rm -f wgcf-account.toml wgcf-profile.conf
+                    until [[ -a wgcf-account.toml ]]; do
+                        wgcf register --accept-tos
+                        sleep 5
+                    done
+                    wgcf generate
+                    chmod +x wgcf-profile.conf
+                    warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
+                    warpPrivateKey=$(grep PrivateKey wgcf-profile.conf | sed "s/PrivateKey = //g")
+                    warpIPv4Address=$(grep "Address = 172" wgcf-profile.conf | sed "s/Address = //g")
+                    warpIPv6Address=$(grep "Address = fd01" wgcf-profile.conf | sed "s/Address = //g")
+                    sed -i "s#PublicKey.*#PublicKey = $warpPublicKey#g" /etc/wireguard/wgcf.conf;
+                    sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/wgcf.conf;
+                    sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
+                    sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
+                    wg-quick up wgcf >/dev/null 2>&1
+                    red "切换 Wgcf-WARP 账户类型失败，已自动切换为WARP 免费账户！"
                     green "建议如下："
                     yellow "1. 检查1.1.1.1 APP中的WARP+账户是否有足够的流量，如没有流量可以使用本脚本内的刷流量功能来获取免费的WARP+流量"
                     yellow "2. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
@@ -1000,7 +1017,27 @@ warpsw1(){
                 if [[ $WireProxyStatus == "plus" ]]; then
                     green "WireProxy-WARP代理模式 账户类型切换为 WARP+ 成功！"
                 else
-                    red "切换 WireProxy-WARP 代理模式账户类型失败，请卸载后重新切换账户！"
+                    systemctl stop wireproxy-warp
+                    cd /etc/wireguard
+                    rm -f wgcf-account.toml wgcf-profile.conf
+                    until [[ -a wgcf-account.toml ]]; do
+                        wgcf register --accept-tos
+                        sleep 5
+                    done
+                    wgcf generate
+                    chmod +x wgcf-profile.conf
+                    warpIPv4Address=$(grep "Address = 172" wgcf-profile.conf | sed "s/Address = //g")
+                    warpPublicKey=$(grep PublicKey wgcf-profile.conf | sed "s/PublicKey = //g")
+                    warpPrivateKey=$(grep PrivateKey wgcf-profile.conf | sed "s/PrivateKey = //g")
+                    sed -i "s#PublicKey.*#PublicKey = $warpPublicKey#g" /etc/wireguard/proxy.conf;
+                    sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/proxy.conf;
+                    sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
+                    rm -f wgcf-profile.conf
+                    systemctl start wireproxy-warp
+                    red "切换 WireProxy-WARP 代理模式账户类型失败，已自动切换为WARP 免费账户！"
+                    green "建议如下："
+                    yellow "1. 检查1.1.1.1 APP中的WARP+账户是否有足够的流量，如没有流量可以使用本脚本内的刷流量功能来获取免费的WARP+流量"
+                    yellow "2. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
                 fi
             fi
             showIP
@@ -1058,11 +1095,6 @@ warpsw1(){
                         sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
                         sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
-                        sed -i "s#PublicKey.*#PublicKey = $wpteampublickey#g" /etc/wireguard/wgcf-profile.conf;
-                        sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/wgcf-profile.conf;
-                        sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
-                        sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
-                        rm -f wgcf-profile.conf
                         wg-quick up wgcf >/dev/null 2>&1
                         red "WARP Teams配置可能有误, 已自动降级至WARP 免费账户 / WARP+"
                         green "建议如下："
