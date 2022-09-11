@@ -590,7 +590,7 @@ installcli(){
                 fi
             done
         fi
-        yellow "正在启动Warp-Cli代理模式"
+        yellow "正在启动 WARP-Cli 代理模式"
         warp-cli --accept-tos set-mode proxy >/dev/null 2>&1
         warp-cli --accept-tos set-proxy-port "$WARPCliPort" >/dev/null 2>&1
         warp-cli --accept-tos connect >/dev/null 2>&1
@@ -604,7 +604,7 @@ installcli(){
             yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
             exit 1
         else
-            green "WARP-Cli代理模式已启动成功!"
+            green "WARP-Cli 代理模式已启动成功!"
             echo ""
             showIP
         fi
