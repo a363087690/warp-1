@@ -434,7 +434,8 @@ wgcfcheck(){
         fi
         checkwgcf
         if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
-            green "安装Wgcf-WARP失败，建议如下："
+            red "安装Wgcf-WARP失败！"
+            green "建议如下："
             yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
             yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
             yellow "3. 查看https://www.cloudflarestatus.com/,你当前VPS就近区域可能处于黄色的【Re-routed】状态"
@@ -756,7 +757,7 @@ TEXT
         if [[ $retry_time == 6 ]]; then
             uninstallWireProxy
             echo ""
-            red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
+            red "由于 WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
             green "建议如下："
             yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
             yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
@@ -768,7 +769,7 @@ TEXT
     done
     sleep 5
     systemctl enable wireproxy-warp >/dev/null 2>&1
-    green "WireProxy-WARP代理模式已启动成功!"
+    green "WireProxy-WARP 代理模式已启动成功!"
     echo ""
     showIP
 }
@@ -800,7 +801,7 @@ wireproxy_changeport(){
         if [[ $retry_time == 6 ]]; then
             uninstallWireProxy
             echo ""
-            red "由于WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
+            red "由于 WireProxy-WARP 代理模式启动重试次数过多 ,已自动卸载WireProxy-WARP 代理模式"
             green "建议如下："
             yellow "1. 建议使用系统官方源升级系统及内核加速！如已使用第三方源及内核加速 ,请务必更新到最新版 ,或重置为系统官方源！"
             yellow "2. 部分VPS系统过于精简 ,相关依赖需自行安装后再重试"
@@ -811,7 +812,7 @@ wireproxy_changeport(){
         sleep 8
     done
     systemctl enable wireproxy-warp
-    green "WireProxy-WARP代理模式已启动成功并已修改端口！"
+    green "WireProxy-WARP 代理模式已启动成功并已修改端口！"
     echo ""
     showIP
 }
@@ -888,7 +889,7 @@ warpsw1(){
             sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
             rm -f wgcf-profile.conf
             wg-quick up wgcf >/dev/null 2>&1
-            yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
+            yellow "正在检查Wgcf-WARP的WARP 免费账户连通性，请稍等..." && sleep 5
             WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
             WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
             if [[ $WgcfV4Status == "on" ]] || [[ $WgcfV6Status == "on" ]]; then
@@ -917,7 +918,7 @@ warpsw1(){
             sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/proxy.conf;
             sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
             systemctl start wireproxy-warp
-            yellow "正在检查WARP 免费账户连通性，请稍等..." && sleep 5
+            yellow "正在检查WireProxy代理模式的WARP 免费账户连通性，请稍等..." && sleep 5
             WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
             sleep 2
             if [[ $WireProxyStatus == "on" ]]; then
@@ -971,7 +972,7 @@ warpsw1(){
                 sed -i "s#Address.*32#Address = $warpIPv4Address#g" /etc/wireguard/wgcf.conf;
                 sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
                 wg-quick up wgcf >/dev/null 2>&1
-                yellow "正在检查WARP+账户连通性，请稍等..." && sleep 5
+                yellow "正在检查Wgcf-WARP的WARP+账户连通性，请稍等..." && sleep 5
                 WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
                 WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
                 if [[ $WgcfV4Status == "plus" ]] || [[ $WgcfV6Status == "plus" ]]; then
@@ -979,6 +980,9 @@ warpsw1(){
                 else
                     wg-quick down wgcf >/dev/null 2>&1
                     red "切换 Wgcf-WARP 账户类型失败，请卸载后重新切换账户！"
+                    green "建议如下："
+                    yellow "1. 检查1.1.1.1 APP中的WARP+账户是否有足够的流量，如没有流量可以使用本脚本内的刷流量功能来获取免费的WARP+流量"
+                    yellow "2. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
                 fi
             fi
             if [[ -n $(type -P wireproxy) ]]; then
@@ -990,7 +994,7 @@ warpsw1(){
                 sed -i "s#PrivateKey.*#PrivateKey = $warpPrivateKey#g" /etc/wireguard/proxy.conf;
                 sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
                 systemctl start wireproxy-warp
-                yellow "正在检查WARP+账户连通性，请稍等..." && sleep 5
+                yellow "正在检查WireProxy的WARP+账户连通性，请稍等..." && sleep 5
                 WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
                 sleep 2
                 if [[ $WireProxyStatus == "plus" ]]; then
@@ -1006,7 +1010,10 @@ warpsw1(){
     fi
     if [[ $accountInput == 3 ]]; then
         read -rp "请复制粘贴WARP Teams账户配置文件链接: " teamconfigurl
-        [[ -z $teamconfigurl ]] && red "未输入配置文件链接，无法升级！" && exit 1
+        if [[ -z $teamconfigurl ]]; then
+            yellow "未输入Teams账户配置文件链接，正在使用脚本公用Teams账户..."
+            teamconfigurl="https://raw.githubusercontent.com/taffychan/warp/main/files/publicteam.xml"
+        fi
         teamsconfig=$(curl -sSL "$teamconfigurl" | sed "s/\"/\&quot;/g")
         wpteampublickey=$(expr "$teamsconfig" : '.*public_key&quot;:&quot;\([^&]*\).*')
         wpteamprivatekey=$(expr "$teamsconfig" : '.*private_key&quot;>\([^<]*\).*')
@@ -1017,7 +1024,7 @@ warpsw1(){
         yellow "PrivateKey: $wpteamprivatekey"
         yellow "IPv4地址: $wpteamv4address"
         yellow "IPv6地址: $wpteamv6address"
-        read -rp "确认配置信息信息正确请输入y, 其他按键退出升级过程: " wpteamconfirm
+        read -rp "确认以上配置信息信息正确请输入y, 其他按键退出升级过程: " wpteamconfirm
         if [[ $wpteamconfirm =~ "y"|"Y" ]]; then
             if [[ -n $(type -P wgcf) && -n $(type -P wg-quick) ]]; then
                 wg-quick down wgcf >/dev/null 2>&1
@@ -1030,7 +1037,7 @@ warpsw1(){
                 sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/wgcf-profile.conf;
                 sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                 wg-quick up wgcf >/dev/null 2>&1
-                yellow "正在检查WARP Teams账户连通性, 请稍等..."
+                yellow "正在检查Wgcf-WARP的WARP Teams账户连通性, 请稍等..."
                 WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
                 WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
                 retry_time=1
@@ -1057,7 +1064,11 @@ warpsw1(){
                         sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                         rm -f wgcf-profile.conf
                         wg-quick up wgcf >/dev/null 2>&1
-                        red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
+                        red "WARP Teams配置可能有误, 已自动降级至WARP 免费账户 / WARP+"
+                        green "建议如下："
+                        yellow "1. 检查提取出来的配置文件是否为从安卓5.1模拟器，1.1.1.1 APP 6.9版本的"
+                        yellow "2. 你有可能修改了团队名、删除了设备"
+                        yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
                     fi
                 done
                 green "Wgcf-WARP 账户类型切换为 WARP Teams 成功！"
@@ -1068,7 +1079,7 @@ warpsw1(){
                 sed -i "s#PrivateKey.*#PrivateKey = $wpteamprivatekey#g" /etc/wireguard/proxy.conf;
                 sed -i "s#Address.*32#Address = $wpteamv4address/32#g" /etc/wireguard/proxy.conf;
                 systemctl start wireproxy-warp
-                yellow "正在检查WARP Teams账户连通性, 请稍等..."
+                yellow "正在检查WireProxy代理模式的WARP Teams账户连通性, 请稍等..."
                 WireProxyStatus=$(curl -sx socks5h://localhost:$w5p https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
                 sleep 2
                 retry_time=1
@@ -1078,6 +1089,7 @@ warpsw1(){
                     if [[ $retry_time == 4 ]]; then
                         systemctl stop wireproxy-warp
                         cd /etc/wireguard
+                        rm -f wgcf-profile.conf
                         wgcf generate
                         chmod +x wgcf-profile.conf
                         warpIPv4Address=$(grep "Address = 172" wgcf-profile.conf | sed "s/Address = //g")
@@ -1088,7 +1100,11 @@ warpsw1(){
                         sed -i "s#Address.*32#Address = $warpIPv4Address/32#g" /etc/wireguard/proxy.conf;
                         rm -f wgcf-profile.conf
                         systemctl start wireproxy-warp
-                        red "WARP Teams配置有误, 已自动降级至WARP 免费账户 / WARP+"
+                        red "WARP Teams配置可能有误, 已自动降级至WARP 免费账户 / WARP+"
+                        green "建议如下："
+                        yellow "1. 检查提取出来的配置文件是否为从安卓5.1模拟器，1.1.1.1 APP 6.9版本的"
+                        yellow "2. 你有可能修改了团队名、删除了设备"
+                        yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
                     fi
                 done
                 green "WireProxy-WARP代理模式 账户类型切换为 WARP Teams 成功！"
