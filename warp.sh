@@ -1000,6 +1000,7 @@ warpsw1(){
                     green "建议如下："
                     yellow "1. 检查1.1.1.1 APP中的WARP+账户是否有足够的流量，如没有流量可以使用本脚本内的刷流量功能来获取免费的WARP+流量"
                     yellow "2. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+                    exit 1
                 fi
             fi
             if [[ -n $(type -P wireproxy) ]]; then
@@ -1038,6 +1039,7 @@ warpsw1(){
                     green "建议如下："
                     yellow "1. 检查1.1.1.1 APP中的WARP+账户是否有足够的流量，如没有流量可以使用本脚本内的刷流量功能来获取免费的WARP+流量"
                     yellow "2. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+                    exit 1
                 fi
             fi
             showIP
@@ -1101,6 +1103,7 @@ warpsw1(){
                         yellow "1. 检查提取出来的配置文件是否为从安卓5.1模拟器，1.1.1.1 APP 6.9版本的"
                         yellow "2. 你有可能修改了团队名、删除了设备"
                         yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+                        exit 1
                     fi
                 done
                 green "Wgcf-WARP 账户类型切换为 WARP Teams 成功！"
@@ -1137,6 +1140,7 @@ warpsw1(){
                         yellow "1. 检查提取出来的配置文件是否为从安卓5.1模拟器，1.1.1.1 APP 6.9版本的"
                         yellow "2. 你有可能修改了团队名、删除了设备"
                         yellow "3. 脚本可能跟不上时代, 建议截图发布到GitHub Issues、GitLab Issues、论坛或TG群询问"
+                        exit 1
                     fi
                 done
                 green "WireProxy-WARP代理模式 账户类型切换为 WARP Teams 成功！"
