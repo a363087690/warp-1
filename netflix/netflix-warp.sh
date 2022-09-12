@@ -115,9 +115,17 @@ menu(){
     echo -e " ${GREEN}4.${PLAIN} WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
     echo -e " ${GREEN}5.${PLAIN} WARP-Cli 代理模式"
     echo -e " ${GREEN}6.${PLAIN} WireProxy-WARP 代理模式"
+    echo " -------------"
+    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
     echo ""
-    read -rp "请选择客户端 [1-6]: " clientInput
+    read -rp "请选择客户端 [0-6]: " clientInput
     case "$clientInput" in
+        1 ) wgcf4 ;;
+        2 ) wgcf6 ;;
+        3 ) wgcfd ;;
+        4 ) cliquan ;;
+        5 ) clisocks ;;
+        6 ) wireproxy ;;
         * ) exit 1 ;;
     esac
 }
