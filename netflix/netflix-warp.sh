@@ -92,24 +92,24 @@ wgcfnf6(){
     fi
     nfv6result=$(nf | sed -n 7p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
     if [[ $nfv6result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
-        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        WgcfWARPIP=$(curl -s6m8 ip.p3terx.com -k | sed -n 1p)
         green "当前Wgcf-WARP的IP：$WgcfWARPIP 已解锁Netfilx"
         yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
         sleep 1h
-        wgcfnf4
+        wgcfnf6
     fi
     if [[ $nfv6result =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
-        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        WgcfWARPIP=$(curl -s6m8 ip.p3terx.com -k | sed -n 1p)
         red "当前Wgcf-WARP的IP：$WgcfWARPIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
         sleep 15
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
-        wgcfnf4
+        wgcfnf6
     fi
     if [[ $nfv6result == "您的网络可能没有正常配置IPv6，或者没有IPv6网络接入" ]]; then
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
-        wgcfnf4
+        wgcfnf6
     fi
 }
 
@@ -122,6 +122,30 @@ wgcfnfd(){
     fi
     nfv4result=$(nf | sed -n 3p)
     nfv6result=$(nf | sed -n 7p)
+    if [[ $nfv4result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]] && [[ $nfv6result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WgcfWARPV4IP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        WgcfWARPV6IP=$(curl -s6m8 ip.p3terx.com -k | sed -n 1p)
+        green "当前Wgcf-WARP的IPv4 IP：$WgcfWARPV4IP 已解锁Netfilx"
+        green "当前Wgcf-WARP的IPv6 IP：$WgcfWARPV6IP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        wgcfnfd
+    fi
+    if [[ $nfv4result =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]] && [[ $nfv6result =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WgcfWARPV4IP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        WgcfWARPV6IP=$(curl -s6m8 ip.p3terx.com -k | sed -n 1p)
+        red "当前Wgcf-WARP的IPv4 IP：$WgcfWARPIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        red "当前Wgcf-WARP的IPv6 IP：$WgcfWARPIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnfd
+    fi
+    if [[ $nfv4result == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]] && [[ $nfv6result == "您的网络可能没有正常配置IPv6，或者没有IPv6网络接入" ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnfd
+    fi
 }
 
 cliquan(){
