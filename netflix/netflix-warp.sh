@@ -55,13 +55,13 @@ if [[ ! -f /usr/local/bin/nf ]]; then
     chmod +x /usr/local/bin/nf
 fi
 
-wgcf4(){
+wgcfnf4(){
     wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ ! $wgcfv4 =~ on|plus ]]; then
         red "Wgcf-WARP的IPv4未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
         exit 1
     fi
-    nfv4result=$(nf | sed -n 3p)
+    nfv4result=$(nf | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
     if [[ $nfv4result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
         WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
         green "当前Wgcf-WARP的IP：$WgcfWARPIP 已解锁Netfilx"
@@ -71,16 +71,16 @@ wgcf4(){
     fi
 }
 
-wgcf6(){
+wgcfnf6(){
     wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ ! $wgcfv6 =~ on|plus ]]; then
         red "Wgcf-WARP的IPv6未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
         exit 1
     fi
-    nfv6result=$(nf | sed -n 7p)
+    nfv6result=$(nf | sed -n 7p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
 }
 
-wgcfd(){
+wgcfnfd(){
     wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
     if [[ ! $wgcfv4 =~ on|plus || ! $wgcfv6 =~ on|plus ]]; then
@@ -97,7 +97,7 @@ cliquan(){
         red "WARP-Cli 全局模式未正常配置，请在脚本中安装WARP-Cli 全局模式！"
         exit 1
     fi
-    nfresult=$(nf -address 172.16.0.2 | sed -n 3p)
+    nfresult=$(nf -address 172.16.0.2 | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
 }
 
 clisocks(){
@@ -107,7 +107,7 @@ clisocks(){
         red "WARP-Cli 代理模式未正常配置，请在脚本中安装WARP-Cli 代理模式！"
         exit 1
     fi
-    nfresult=$(nf -proxy socks5://127.0.0.1:$cliport | sed -n 3p)
+    nfresult=$(nf -proxy socks5://127.0.0.1:$cliport | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
 }
 
 wireproxy(){
@@ -117,7 +117,7 @@ wireproxy(){
         red "WireProxy-WARP 代理模式未正常配置，请在脚本中安装WireProxy-WARP 代理模式！"
         exit 1
     fi
-    nfresult=$(nf -proxy socks5://127.0.0.1:$wireport | sed -n 3p)
+    nfresult=$(nf -proxy socks5://127.0.0.1:$wireport | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
 }
 
 menu(){
@@ -133,10 +133,10 @@ menu(){
     echo -e " ${GREEN}0.${PLAIN} 退出脚本"
     echo ""
     read -rp "请选择客户端 [0-6]: " clientInput
-    case "$clientInput" in
-        1 ) wgcf4 ;;
-        2 ) wgcf6 ;;
-        3 ) wgcfd ;;
+    case $clientInput in
+        1 ) wgcfnf4 ;;
+        2 ) wgcfnf6 ;;
+        3 ) wgcfnfd ;;
         4 ) cliquan ;;
         5 ) clisocks ;;
         6 ) wireproxy ;;
