@@ -69,6 +69,19 @@ wgcfnf4(){
         sleep 1h
         wgcfnf4
     fi
+    if [[ $nfv4result =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        red "当前Wgcf-WARP的IP：$WgcfWARPIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnf4
+    fi
+    if [[ $nfv4result == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnf4
+    fi
 }
 
 wgcfnf6(){
