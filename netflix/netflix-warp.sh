@@ -61,6 +61,7 @@ wgcf4(){
         red "Wgcf-WARP的IPv4未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
         exit 1
     fi
+    nfv4result=$(nf | sed -n 3p)
 }
 
 wgcf6(){
@@ -69,6 +70,7 @@ wgcf6(){
         red "Wgcf-WARP的IPv6未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
         exit 1
     fi
+    nfv6result=$(nf | sed -n 7p)
 }
 
 wgcfd(){
@@ -78,6 +80,8 @@ wgcfd(){
         red "Wgcf-WARP的IPv4和IPv6未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
         exit 1
     fi
+    nfv4result=$(nf | sed -n 3p)
+    nfv6result=$(nf | sed -n 7p)
 }
 
 cliquan(){
@@ -86,6 +90,7 @@ cliquan(){
         red "WARP-Cli 全局模式未正常配置，请在脚本中安装WARP-Cli 全局模式！"
         exit 1
     fi
+    nfresult=$(nf -address 172.16.0.2 | sed -n 3p)
 }
 
 clisocks(){
@@ -95,6 +100,7 @@ clisocks(){
         red "WARP-Cli 代理模式未正常配置，请在脚本中安装WARP-Cli 代理模式！"
         exit 1
     fi
+    nfresult=$(nf -proxy socks5://127.0.0.1:$cliport | sed -n 3p)
 }
 
 wireproxy(){
@@ -104,6 +110,7 @@ wireproxy(){
         red "WireProxy-WARP 代理模式未正常配置，请在脚本中安装WireProxy-WARP 代理模式！"
         exit 1
     fi
+    nfresult=$(nf -proxy socks5://127.0.0.1:$wireport | sed -n 3p)
 }
 
 menu(){
