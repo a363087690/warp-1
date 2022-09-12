@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Checking and fetching wgcf latest version
+      - name: Checking and fetching Netflix verify latest version
         run: |
           wget -N https://raw.githubusercontent.com/taffychan/warp/master/.github/nfverify.sh
           bash nfverify.sh
