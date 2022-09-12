@@ -91,6 +91,26 @@ wgcfnf6(){
         exit 1
     fi
     nfv6result=$(nf | sed -n 7p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+    if [[ $nfv6result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        green "当前Wgcf-WARP的IP：$WgcfWARPIP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        wgcfnf4
+    fi
+    if [[ $nfv6result =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        red "当前Wgcf-WARP的IP：$WgcfWARPIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnf4
+    fi
+    if [[ $nfv6result == "您的网络可能没有正常配置IPv6，或者没有IPv6网络接入" ]]; then
+        wg-quick down wgcf >/dev/null 2>&1
+        wg-quick up wgcf >/dev/null 2>&1
+        wgcfnf4
+    fi
 }
 
 wgcfnfd(){
@@ -111,6 +131,26 @@ cliquan(){
         exit 1
     fi
     nfresult=$(nf -address 172.16.0.2 | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+    if [[ $nfresult == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WARPCliIP=$(curl -s4m8 ip.p3terx.com -k --interface CloudflareWARP | sed -n 1p)
+        green "当前WARP-Cli全局模式的IP：$WARPCliIP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        wgcfnf4
+    fi
+    if [[ $nfresult =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WARPCliIP=$(curl -s4m8 ip.p3terx.com -k --interface CloudflareWARP | sed -n 1p)
+        red "当前WARP-Cli全局模式的IP：$WARPCliIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        wgcfnf4
+    fi
+    if [[ $nfresult == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]]; then
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        wgcfnf4
+    fi
 }
 
 clisocks(){
@@ -121,6 +161,26 @@ clisocks(){
         exit 1
     fi
     nfresult=$(nf -proxy socks5://127.0.0.1:$cliport | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+    if [[ $nfresult == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WARPCliIP=$(curl -sx socks5h://localhost:$cliport ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+        green "当前WARP-Cli代理模式的IP：$WARPCliIP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        clisocks
+    fi
+    if [[ $nfresult =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WARPCliIP=$(curl -sx socks5h://localhost:$cliport ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+        red "当前WARP-Cli代理模式的IP：$WARPCliIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        clisocks
+    fi
+    if [[ $nfresult == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]]; then
+        warp-cli --accept-tos disconnect >/dev/null 2>&1
+        warp-cli --accept-tos connect >/dev/null 2>&1
+        clisocks
+    fi
 }
 
 wireproxy(){
@@ -131,6 +191,26 @@ wireproxy(){
         exit 1
     fi
     nfresult=$(nf -proxy socks5://127.0.0.1:$wireport | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+    if [[ $nfresult == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WireProxyIP=$(curl -sx socks5h://localhost:$WireProxyPort ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+        green "当前WireProxy-WARP的IP：$WireProxyIP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        wireproxy
+    fi
+    if [[ $nfresult =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务"|"您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]]; then
+        WireProxyIP=$(curl -sx socks5h://localhost:$WireProxyPort ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+        red "当前WireProxy-WARP的IP：$WireProxyIP 未解锁Netfilx，脚本将在15秒后重新测试Netfilx解锁情况"
+        sleep 15
+        systemctl stop wireproxy-warp
+        systemctl start wireproxy-warp
+        wireproxy
+    fi
+    if [[ $nfresult == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]]; then
+        systemctl stop wireproxy-warp
+        systemctl start wireproxy-warp
+        wireproxy
+    fi
 }
 
 menu(){
