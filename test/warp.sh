@@ -1387,7 +1387,7 @@ menu(){
         14) uninstallWireProxy ;;
         15) warpup ;;
         16) warpsw ;;
-        17) warpnf ;;
+        17) wget -N https://raw.githubusercontent.com/taffychan/warp/main/netflix/netflix-warp.sh && bash netflix-warp.sh ;;
         *) red "请输入正确的选项 [0-17]！" && exit 1 ;;
     esac
 }
