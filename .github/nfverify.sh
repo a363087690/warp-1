@@ -3,7 +3,7 @@
 rm -f ${GITHUB_WORKSPACE}/netfilx/verify/nf_linux_amd64 ${GITHUB_WORKSPACE}/netfilx/verify/nf_linux_arm64
 
 actions_date=$(date)
-repo_last_ver=$(curl -Ls "https://api.github.com/repos/octeep/wireproxy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+repo_last_ver=$(curl -Ls "https://api.github.com/repos/sjlleo/netflix-verify/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
 wget -N https://github.com/sjlleo/netflix-verify/releases/download/$repo_last_ver/nf_linux_amd64 -O ${GITHUB_WORKSPACE}/netfilx/verify/nf_linux_amd64
 
