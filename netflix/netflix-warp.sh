@@ -41,10 +41,6 @@ done
 
 [[ -z $SYSTEM ]] && red "目前你的VPS的操作系统暂未支持！" && exit 1
 
-if [[ ! -f /usr/local/bin/nf ]]; then
-    wget https://cdn.jsdelivr.net/gh/taffychan/warp/netflix/verify/nf_linux_$(archAffix) -O /usr/local/bin/nf
-fi
-
 archAffix(){
     case "$(uname -m)" in
         x86_64 | amd64 ) echo 'amd64' ;;
@@ -53,6 +49,10 @@ archAffix(){
         * ) red "不支持的CPU架构!" && exit 1 ;;
     esac
 }
+
+if [[ ! -f /usr/local/bin/nf ]]; then
+    wget https://cdn.jsdelivr.net/gh/taffychan/warp/netflix/verify/nf_linux_$(archAffix) -O /usr/local/bin/nf
+fi
 
 menu(){
     yellow "需要使用什么方式来使用WARP的Netflix IP"
