@@ -55,16 +55,56 @@ if [[ ! -f /usr/local/bin/nf ]]; then
     chmod +x /usr/local/bin/nf
 fi
 
+wgcf4(){
+    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ ! $wgcfv4 =~ on|plus ]]; then
+        red "Wgcf-WARP的IPv4未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
+        exit 1
+    fi
+}
+
+wgcf6(){
+    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ ! $wgcfv6 =~ on|plus ]]; then
+        red "Wgcf-WARP的IPv6未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
+        exit 1
+    fi
+}
+
+wgcfd(){
+    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    if [[ ! $wgcfv4 =~ on|plus || ! $wgcfv6 =~ on|plus ]]; then
+        red "Wgcf-WARP的IPv4和IPv6未正常配置，请在脚本中安装Wgcf-WARP全局模式！"
+        exit 1
+    fi
+}
+
+cliquan(){
+    warpstat=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k --interface CloudflareWARP | grep warp | cut -d= -f2)
+}
+
+clisocks(){
+    cliport=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+    warpstat=$(curl -sx socks5h://localhost:$cliport https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+}
+
+wireproxy(){
+    wireport=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
+    warpstat=$(curl -sx socks5h://localhost:$wireport https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+}
+
 menu(){
     yellow "需要使用什么方式来使用WARP的Netflix IP"
     echo ""
     echo -e " ${GREEN}1.${PLAIN} Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
     echo -e " ${GREEN}2.${PLAIN} Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
     echo -e " ${GREEN}3.${PLAIN} Wgcf-WARP 全局双栈模式 ${YELLOW}(WARP IPv4 + WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}4.${PLAIN} WARP-Cli 代理模式"
-    echo -e " ${GREEN}5.${PLAIN} WireProxy-WARP 代理模式"
+    echo -e " ${GREEN}4.${PLAIN} WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}5.${PLAIN} WARP-Cli 代理模式"
+    echo -e " ${GREEN}6.${PLAIN} WireProxy-WARP 代理模式"
     echo ""
-    read -rp "请选择客户端 [1-5]: " clientInput
+    read -rp "请选择客户端 [1-6]: " clientInput
     case "$clientInput" in
         * ) exit 1 ;;
     esac
