@@ -1054,7 +1054,7 @@ warpsw1(){
         fi
     fi
     if [[ $accountInput == 3 ]]; then
-        read -rp "请复制粘贴WARP Teams账户配置文件链接: " teamconfigurl
+        read -rp "请复制粘贴WARP Teams账户配置文件链接 [如未输入则使用脚本默认的]：" teamconfigurl
         if [[ -z $teamconfigurl ]]; then
             yellow "未输入Teams账户配置文件链接，正在使用脚本公用Teams账户..."
             teamconfigurl="https://raw.githubusercontent.com/taffychan/warp/main/files/publicteam.xml"
