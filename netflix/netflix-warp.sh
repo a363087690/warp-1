@@ -82,16 +82,28 @@ wgcfd(){
 
 cliquan(){
     warpstat=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k --interface CloudflareWARP | grep warp | cut -d= -f2)
+    if [[ ! $warpstat =~ on|plus ]]; then
+        red "WARP-Cli 全局模式未正常配置，请在脚本中安装WARP-Cli 全局模式！"
+        exit 1
+    fi
 }
 
 clisocks(){
     cliport=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
     warpstat=$(curl -sx socks5h://localhost:$cliport https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+    if [[ ! $warpstat =~ on|plus ]]; then
+        red "WARP-Cli 代理模式未正常配置，请在脚本中安装WARP-Cli 代理模式！"
+        exit 1
+    fi
 }
 
 wireproxy(){
     wireport=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
     warpstat=$(curl -sx socks5h://localhost:$wireport https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+    if [[ ! $warpstat =~ on|plus ]]; then
+        red "WireProxy-WARP 代理模式未正常配置，请在脚本中安装WireProxy-WARP 代理模式！"
+        exit 1
+    fi
 }
 
 menu(){
