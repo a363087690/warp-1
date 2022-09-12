@@ -1192,21 +1192,6 @@ warpsw(){
     esac
 }
 
-warpnf(){
-    yellow "请选择需要刷NetFilx IP的WARP客户端:"
-    green "1. Wgcf-WARP IPv4模式"
-    green "2. Wgcf-WARP IPv6模式"
-    green "3. WARP-Cli 代理模式"
-    green "4. WireProxy-WARP 代理模式"
-    read -rp "请选择客户端 [1-4]: " clientInput
-    case "$clientInput" in
-        1 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix/netflix4.sh && bash netflix4.sh ;;
-        2 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix/netflix6.sh && bash netflix6.sh ;;
-        3 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix/netflixcli.sh && bash netflixcli.sh ;;
-        4 ) wget -N --no-check-certificate https://raw.githubusercontent.com/taffychan/warp/main/netflix/netflixwire.sh && bash netflixwire.sh ;;
-    esac
-}
-
 showIP(){
     if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
         INTERFACE='--interface CloudflareWARP'
