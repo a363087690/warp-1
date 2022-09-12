@@ -62,6 +62,13 @@ wgcf4(){
         exit 1
     fi
     nfv4result=$(nf | sed -n 3p)
+    if [[ $nfv4result == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]]; then
+        WgcfWARPIP=$(curl -s4m8 ip.p3terx.com -k | sed -n 1p)
+        green "当前Wgcf-WARP的IP：$WgcfWARPIP 已解锁Netfilx"
+        yellow "等待1小时后，脚本将会自动重新检查Netfilx解锁状态"
+        sleep 1h
+        wgcfv4
+    fi
 }
 
 wgcf6(){
