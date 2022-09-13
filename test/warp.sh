@@ -878,13 +878,7 @@ warpsw1(){
             wg-quick down wgcf >/dev/null 2>&1
             cd /etc/wireguard
             rm -f wgcf-account.toml wgcf-profile.conf
-            until [[ -a wgcf-account.toml ]]; do
-                wgcf register --accept-tos
-                sleep 5
-            done
-            chmod +x wgcf-account.toml
-            wgcf generate
-            chmod +x wgcf-profile.conf
+            wgcfreg
             warpPublicKey=$(grep PublicKey /etc/wireguard/wgcf-profile.conf | sed "s/PublicKey = //g")
             warpPrivateKey=$(grep PrivateKey /etc/wireguard/wgcf-profile.conf | sed "s/PrivateKey = //g")
             warpIPv4Address=$(cat /etc/wireguard/wgcf-profile.conf | sed -n 3p | sed "s/Address = //g")
@@ -909,14 +903,8 @@ warpsw1(){
         if [[ -n $(type -P wireproxy) ]]; then
             systemctl stop wireproxy-warp
             cd /etc/wireguard
-            rm -f wgcf-account.toml
-            until [[ -a wgcf-account.toml ]]; do
-                wgcf register --accept-tos
-                sleep 5
-            done
-            chmod +x wgcf-account.toml
-            wgcf generate
-            chmod +x wgcf-profile.conf
+            rm -f wgcf-account.toml wgcf-profile.conf
+            wgcfreg
             warpIPv4Address=$(cat /etc/wireguard/wgcf-profile.conf | sed -n 3p | sed "s/Address = //g")
             warpPublicKey=$(grep PublicKey /etc/wireguard/wgcf-profile.conf | sed "s/PublicKey = //g")
             warpPrivateKey=$(grep PrivateKey /etc/wireguard/wgcf-profile.conf | sed "s/PrivateKey = //g")
