@@ -1185,6 +1185,13 @@ warpsw(){
     esac
 }
 
+wgprofile(){
+    yellow "请选择将要生成的配置文件的网络环境："
+    green "1. IPv4"
+    green "2. IPv6"
+    read -rp "请输入选项 [1-2]：" netInput
+}
+
 showIP(){
     if [[ $(warp-cli --accept-tos settings 2>/dev/null | grep "Mode" | awk -F ": " '{print $2}') == "Warp" ]]; then
         INTERFACE='--interface CloudflareWARP'
@@ -1351,8 +1358,8 @@ menu(){
     echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
     echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} 提取 Wgcf WireGuard 配置文件"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}19.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}21.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 | ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e " ${GREEN}19.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}  | ${GREEN}21.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
+    echo -e " ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 ${YELLOW}(WARP IPv6)${PLAIN}  | ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
@@ -1375,7 +1382,7 @@ menu(){
         15) warpup ;;
         16) warpsw ;;
         17) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
-        *) red "请输入正确的选项 [0-17]！" && exit 1 ;;
+        *) red "请输入正确的选项 [0-21]！" && exit 1 ;;
     esac
 }
 
