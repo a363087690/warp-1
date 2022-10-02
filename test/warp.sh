@@ -1349,11 +1349,14 @@ menu(){
     echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式                | ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
     echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口        | ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
     echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} 提取 Wgcf WireGuard 配置文件"
+    echo " ----------------------------------------------------------------------------------"
+    echo -e " ${GREEN}19.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
+    echo -e " ${GREEN}21.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 | ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
-    read -rp "请输入选项 [0-17]：" menuChoice
+    read -rp "请输入选项 [0-21]：" menuChoice
     case $menuChoice in
         1) wgcfv44 ;;
         2) wgcfv66 ;;
