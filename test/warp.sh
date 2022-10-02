@@ -504,7 +504,7 @@ installwpgo(){
     chmod +x /opt/warp-go/warp-go
 
     wpgoreg
-    
+
     cat <<EOF > /opt/warp-go/NonGlobalUp.sh
 sleep 5
 ip -4 rule add from 172.16.0.2 lookup 60000
@@ -536,6 +536,7 @@ EOF
 
 wpgoreg(){
     until [[ -e /opt/warp-go/warp.conf ]]; then
+        yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
         /opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf
     fi
 }
