@@ -502,6 +502,42 @@ installwpgo(){
     mkdir -p /opt/warp-go/
     wget -O /opt/warp-go/warp-go https://cdn.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-$arch -O /opt/warp-go/warp-go
     chmod +x /opt/warp-go/warp-go
+
+    wpgoreg
+    
+    cat <<EOF > /opt/warp-go/NonGlobalUp.sh
+sleep 5
+ip -4 rule add from 172.16.0.2 lookup 60000
+ip -4 rule add table main suppress_prefixlength 0
+ip -4 route add default dev WARP table 60000
+EOF
+    cat <<EOF > /opt/warp-go/NonGlobalDown.sh
+ip -4 rule delete from 172.16.0.2 lookup 60000
+ip -4 rule delete table main suppress_prefixlength 0
+EOF
+    chmod +x /opt/warp-go/NonGlobalUp.sh /opt/warp-go/NonGlobalDown.sh
+
+    cat <<EOF > /lib/systemd/system/warp-go.service
+[Unit]
+Description=warp-go service
+After=network.target
+Documentation=https://gitlab.com/misakablog/warp-script
+Documentation=https://gitlab.com/ProjectWARP/warp-go
+[Service]
+WorkingDirectory=/opt/warp-go/
+ExecStart=/opt/warp-go/warp-go --config=/opt/warp-go/warp.conf
+Environment="LOG_LEVEL=verbose"
+RemainAfterExit=yes
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
+wpgoreg(){
+    until [[ -e /opt/warp-go/warp.conf ]]; then
+        /opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf
+    fi
 }
 
 installcli(){
