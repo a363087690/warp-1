@@ -1217,8 +1217,8 @@ wpgoins(){
         esac;;
     fi
 
+    mkdir -p /opt/warp-go/
     wget -O /opt/warp-go/warp-go https://cdn.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-$arch -O /opt/warp-go/warp-go
-
     chmod +x /opt/warp-go/warp-go
 }
 
