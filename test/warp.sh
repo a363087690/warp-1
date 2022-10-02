@@ -1389,7 +1389,7 @@ menu(){
     echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} 提取 Wgcf WireGuard 配置文件"
     echo " ----------------------------------------------------------------------------------"
     echo -e " ${GREEN}19.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}  | ${GREEN}21.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
-    echo -e " ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 ${YELLOW}(WARP IPv6)${PLAIN}  | ${GREEN}0.${PLAIN} 退出脚本"
+    echo -e " ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 ${YELLOW}(WARP IPv6)${PLAIN}  | ${GREEN}22.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
     echo -e ""
     showIP
     echo -e ""
