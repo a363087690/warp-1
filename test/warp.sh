@@ -1201,8 +1201,23 @@ wgprofile(){
     sed -i "10a Endpoint = $endip:2408" /root/wgcf-proxy.conf
     green "Wgcf-WARP的WireGuard配置文件已提取成功！"
     yellow "文件已保存至：/root/wgcf-proxy.conf"
-    yellow "节点配置二维码如下："
+    yellow "节点配置二维码如下所示："
     qrencode -t ansiutf8 < /root/wgcf-proxy.conf
+}
+
+wpgoins(){
+    arch=$(archAffix)
+    if [[ $arch == "amd64" ]]; then
+        flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
+        case "$CPU_FLAGS" in
+            *avx512*) arch=amd64v4;;
+            *avx2*) arch=amd64v3;;
+            *sse3*) arch=amd64v2;;
+            *) arch=amd64;;
+        esac;;
+    fi
+
+    wget -O /opt/warp-go/warp-go https://cdn.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-$arch -O /opt/warp-go/warp-go
 }
 
 showIP(){
