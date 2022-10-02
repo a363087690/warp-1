@@ -1377,42 +1377,43 @@ menu(){
     echo -e "# ${GREEN}GitLab${PLAIN}: https://gitlab.com/misakablog                     #"
     echo "#############################################################"
     echo -e ""
-    echo -e " ${GREEN}1.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}6.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}2.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN} | ${GREEN}7.${PLAIN} 安装 WARP-Cli 代理模式"
-    echo -e " ${GREEN}3.${PLAIN} 安装/切换 Wgcf-WARP 全局双栈模式             | ${GREEN}8.${PLAIN} 修改 WARP-Cli 代理模式连接端口"
-    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                         | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli"
-    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                               | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
+    echo -e " ${GREEN}1.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN} | ${GREEN}6.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}2.${PLAIN} 安装/切换 Wgcf-WARP 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN} | ${GREEN}7.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
+    echo -e " ${GREEN}3.${PLAIN} 安装/切换 Wgcf-WARP 全局双栈模式             | ${GREEN}8.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
+    echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                         | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Go"
+    echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                               | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式                | ${GREEN}15.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
-    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口        | ${GREEN}16.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
-    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
-    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
+    echo -e " ${GREEN}11.${PLAIN} 安装 WARP-Cli 全局模式 ${YELLOW}(WARP IPv4)${PLAIN}          | ${GREEN}16.${PLAIN} 安装 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}12.${PLAIN} 安装 WARP-Cli 代理模式                      | ${GREEN}17.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口"
+    echo -e " ${GREEN}13.${PLAIN} 修改 WARP-Cli 代理模式连接端口              | ${GREEN}18.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式"
+    echo -e " ${GREEN}14.${PLAIN} 开启或关闭 WARP-Cli                         | ${GREEN}19.${PLAIN} ${RED}卸载 WireProxy-WARP 代理模式${PLAIN}"
+    echo -e " ${GREEN}15.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}                               | ${GREEN}20.${PLAIN} 提取 WireGuard 节点配置文件"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}19.${PLAIN} 获取 WARP+ 账户流量                         | ${GREEN}21.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo -e " ${GREEN}20.${PLAIN} 切换 WARP 账户类型                          | ${GREEN}22.${PLAIN} 提取 WireGuard 节点配置文件"
+    echo -e " ${GREEN}21.${PLAIN} 获取 WARP+ 账户流量                         | ${GREEN}23.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}22.${PLAIN} 切换 WARP 账户类型                          | ${GREEN}0.${PLAIN} 退出脚本"
     echo -e ""
     showIP
     echo -e ""
-    read -rp "请输入选项 [0-22]：" menuChoice
+    read -rp "请输入选项 [0-23]：" menuChoice
     case $menuChoice in
         1) wgcfv44 ;;
         2) wgcfv66 ;;
         3) wgcfv46 ;;
         4) switchwgcf ;;
         5) uninstallwgcf ;;
-        6) warpcli=1 && installcli ;;
-        7) warpcli=2 && installcli ;;
-        8) warpcli_changeport ;;
-        9) switchcli ;;
-        10) uninstallcli ;;
-        11) installWireProxy ;;
-        12) wireproxy_changeport ;;
-        13) switchWireProxy ;;
-        14) uninstallWireProxy ;;
-        19) warpup ;;
-        20) warpsw ;;
-        21) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
-        *) red "请输入正确的选项 [0-22]！" && exit 1 ;;
+        11) warpcli=1 && installcli ;;
+        12) warpcli=2 && installcli ;;
+        13) warpcli_changeport ;;
+        14) switchcli ;;
+        15) uninstallcli ;;
+        16) installWireProxy ;;
+        17) wireproxy_changeport ;;
+        18) switchWireProxy ;;
+        19) uninstallWireProxy ;;
+        21) warpup ;;
+        22) warpsw ;;
+        23) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
+        *) red "请输入正确的选项 [0-23]！" && exit 1 ;;
     esac
 }
 
