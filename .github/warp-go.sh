@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -f ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-arm64 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-s390x ${GITHUB_WORKSPACE}/files/logs/warpgo-fetchlog.txt
+rm -f ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v2 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v3 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v4 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-arm64 ${GITHUB_WORKSPACE}/files/warp-go/warp-go-s390x ${GITHUB_WORKSPACE}/files/logs/warpgo-fetchlog.txt
 
 actions_date=$(date)
 repo_last_ver=$(curl -Ls "https://gitlab.com/api/v4/projects/ProjectWARP%2Fwarp-go/releases" | grep -oP '"tag_name":"v\K[^\"]+' | head -n 1)
@@ -9,6 +9,21 @@ wget -N https://gitlab.com/ProjectWARP/warp-go/-/releases/v"$repo_last_ver"/down
 tar -zxvf warp-go_"$repo_last_ver"_linux_amd64.tar.gz
 rm -f warp-go_"$repo_last_ver"_linux_amd64.tar.gz LICENCE README.md README.zh_CN.md
 mv -f warp-go ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64
+
+wget -N https://gitlab.com/ProjectWARP/warp-go/-/releases/v"$repo_last_ver"/downloads/warp-go_"$repo_last_ver"_linux_amd64v2.tar.gz
+tar -zxvf warp-go_"$repo_last_ver"_linux_amd64v2.tar.gz
+rm -f warp-go_"$repo_last_ver"_linux_amd64v2.tar.gz LICENCE README.md README.zh_CN.md
+mv -f warp-go ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v2
+
+wget -N https://gitlab.com/ProjectWARP/warp-go/-/releases/v"$repo_last_ver"/downloads/warp-go_"$repo_last_ver"_linux_amd64v3.tar.gz
+tar -zxvf warp-go_"$repo_last_ver"_linux_amd64v3.tar.gz
+rm -f warp-go_"$repo_last_ver"_linux_amd64v3.tar.gz LICENCE README.md README.zh_CN.md
+mv -f warp-go ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v3
+
+wget -N https://gitlab.com/ProjectWARP/warp-go/-/releases/v"$repo_last_ver"/downloads/warp-go_"$repo_last_ver"_linux_amd64v4.tar.gz
+tar -zxvf warp-go_"$repo_last_ver"_linux_amd64v4.tar.gz
+rm -f warp-go_"$repo_last_ver"_linux_amd64v4.tar.gz LICENCE README.md README.zh_CN.md
+mv -f warp-go ${GITHUB_WORKSPACE}/files/warp-go/warp-go-amd64v4
 
 wget -N https://gitlab.com/ProjectWARP/warp-go/-/releases/v"$repo_last_ver"/downloads/warp-go_"$repo_last_ver"_linux_arm64.tar.gz
 tar -zxvf warp-go_"$repo_last_ver"_linux_arm64.tar.gz
