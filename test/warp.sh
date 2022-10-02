@@ -1214,7 +1214,7 @@ wpgoins(){
             *avx2*) arch=amd64v3;;
             *sse3*) arch=amd64v2;;
             *) arch=amd64;;
-        esac;;
+        esac
     fi
 
     mkdir -p /opt/warp-go/
@@ -1388,8 +1388,8 @@ menu(){
     echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
     echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}19.${PLAIN} 获取 WARP+ 账户流量 | ${GREEN}21.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo -e " ${GREEN}20.${PLAIN} 切换 WARP 账户类型${PLAIN}  | ${GREEN}22.${PLAIN} 提取 WireGuard 节点配置文件"
+    echo -e " ${GREEN}19.${PLAIN} 获取 WARP+ 账户流量                         | ${GREEN}21.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}20.${PLAIN} 切换 WARP 账户类型                          | ${GREEN}22.${PLAIN} 提取 WireGuard 节点配置文件"
     echo -e ""
     showIP
     echo -e ""
