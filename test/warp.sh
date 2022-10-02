@@ -487,6 +487,23 @@ uninstallwgcf(){
     green "Wgcf-WARP 已彻底卸载成功!"
 }
 
+installwpgo(){
+    arch=$(archAffix)
+    if [[ $arch == "amd64" ]]; then
+        flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
+        case "$CPU_FLAGS" in
+            *avx512*) arch=amd64v4;;
+            *avx2*) arch=amd64v3;;
+            *sse3*) arch=amd64v2;;
+            *) arch=amd64;;
+        esac
+    fi
+
+    mkdir -p /opt/warp-go/
+    wget -O /opt/warp-go/warp-go https://cdn.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-$arch -O /opt/warp-go/warp-go
+    chmod +x /opt/warp-go/warp-go
+}
+
 installcli(){
     [[ $SYSTEM == "CentOS" ]] && [[ ! ${OSID} =~ 8 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持CentOS / Almalinux / Rocky / Oracle Linux 8系统" && exit 1
     [[ $SYSTEM == "Debian" ]] && [[ ! ${OSID} =~ 9|10|11 ]] && yellow "当前系统版本：${CMD} \nWARP-Cli代理模式仅支持Debian 9-11系统" && exit 1
@@ -1203,23 +1220,6 @@ wgprofile(){
     yellow "文件已保存至：/root/wgcf-proxy.conf"
     yellow "节点配置二维码如下所示："
     qrencode -t ansiutf8 < /root/wgcf-proxy.conf
-}
-
-wpgoins(){
-    arch=$(archAffix)
-    if [[ $arch == "amd64" ]]; then
-        flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
-        case "$CPU_FLAGS" in
-            *avx512*) arch=amd64v4;;
-            *avx2*) arch=amd64v3;;
-            *sse3*) arch=amd64v2;;
-            *) arch=amd64;;
-        esac
-    fi
-
-    mkdir -p /opt/warp-go/
-    wget -O /opt/warp-go/warp-go https://cdn.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-$arch -O /opt/warp-go/warp-go
-    chmod +x /opt/warp-go/warp-go
 }
 
 showIP(){
