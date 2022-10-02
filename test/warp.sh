@@ -1383,17 +1383,17 @@ menu(){
     echo -e " ${GREEN}4.${PLAIN} 开启或关闭 Wgcf-WARP                         | ${GREEN}9.${PLAIN} 开启或关闭 WARP-Cli"
     echo -e " ${GREEN}5.${PLAIN} ${RED}卸载 Wgcf-WARP${PLAIN}                               | ${GREEN}10.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式                | ${GREEN}15.${PLAIN} 获取 WARP+ 账户流量"
-    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口        | ${GREEN}16.${PLAIN} 切换 WARP 账户类型"
-    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 获取解锁 Netflix 的 WARP IP"
-    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} 提取 Wgcf WireGuard 配置文件"
+    echo -e " ${GREEN}11.${PLAIN} 安装 Wireproxy-WARP 代理模式                | ${GREEN}15.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}"
+    echo -e " ${GREEN}12.${PLAIN} 修改 Wireproxy-WARP 代理模式连接端口        | ${GREEN}16.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv6)${PLAIN}"
+    echo -e " ${GREEN}13.${PLAIN} 开启或关闭 Wireproxy-WARP 代理模式          | ${GREEN}17.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
+    echo -e " ${GREEN}14.${PLAIN} ${RED}卸载 Wireproxy-WARP 代理模式${PLAIN}                | ${GREEN}18.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
     echo " ----------------------------------------------------------------------------------"
-    echo -e " ${GREEN}19.${PLAIN} 安装/切换 WARP-Go 全局单栈模式 ${YELLOW}(WARP IPv4)${PLAIN}  | ${GREEN}21.${PLAIN} 安装/切换 WARP-Go 全局双栈模式"
-    echo -e " ${GREEN}20.${PLAIN} 安装/切换 WARP-Go 全局双栈模式 ${YELLOW}(WARP IPv6)${PLAIN}  | ${GREEN}22.${PLAIN} ${RED}卸载 WARP-Go${PLAIN}"
+    echo -e " ${GREEN}19.${PLAIN} 获取 WARP+ 账户流量 | ${GREEN}21.${PLAIN} 获取解锁 Netflix 的 WARP IP"
+    echo -e " ${GREEN}20.${PLAIN} 切换 WARP 账户类型${PLAIN}  | ${GREEN}22.${PLAIN} 提取 WireGuard 节点配置文件"
     echo -e ""
     showIP
     echo -e ""
-    read -rp "请输入选项 [0-21]：" menuChoice
+    read -rp "请输入选项 [0-22]：" menuChoice
     case $menuChoice in
         1) wgcfv44 ;;
         2) wgcfv66 ;;
@@ -1409,10 +1409,10 @@ menu(){
         12) wireproxy_changeport ;;
         13) switchWireProxy ;;
         14) uninstallWireProxy ;;
-        15) warpup ;;
-        16) warpsw ;;
-        17) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
-        *) red "请输入正确的选项 [0-21]！" && exit 1 ;;
+        19) warpup ;;
+        20) warpsw ;;
+        21) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
+        *) red "请输入正确的选项 [0-22]！" && exit 1 ;;
     esac
 }
 
