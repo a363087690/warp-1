@@ -1,0 +1,29 @@
+name: Fetch warp-go latest version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 12 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checking and fetching warp-go latest version
+        run: |
+          wget -N https://raw.githubusercontent.com/taffychan/warp/master/.github/warp-go.sh
+          bash warp-go.sh
+      - name: Git uploading
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Uploaded by Github Actions, Date: $(date)"
+          git push
+      - name: Refreshing Jsdelivr
+        run: |
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-amd64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-arm64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-s390x
