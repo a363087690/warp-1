@@ -25,5 +25,8 @@ jobs:
       - name: Refreshing Jsdelivr
         run: |
           curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-amd64
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-amd64v2
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-amd64v3
+          curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-amd64v4
           curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-arm64
           curl https://purge.jsdelivr.net/gh/taffychan/warp/files/warp-go/warp-go-s390x
