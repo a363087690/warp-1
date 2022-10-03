@@ -676,7 +676,7 @@ installwpgo(){
         ${PACKAGE_UPDATE[int]}
         ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3 qrencode
     fi
-    
+
     arch=$(archAffix)
     if [[ $arch == "amd64" ]]; then
         flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
@@ -1524,10 +1524,22 @@ wpgoprofile(){
         *) endip="162.159.193.10" ;;
     esac
     /opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --export-wireguard=/root/warpgo-proxy.conf
+    sed -i "s/engage.cloudflareclient.com/$endip/g" /etc/wireguard/wgcf.conf
     green "WARP-Go的WireGuard配置文件已提取成功！"
     yellow "文件已保存至：/root/warp-goproxy.conf"
     yellow "节点配置二维码如下所示："
     qrencode -t ansiutf8 < /root/warpgo-proxy.conf
+}
+
+wgprofile(){
+    yellow "请选择将要生成的配置文件的网络环境："
+    green "1. Wgcf-WARP （默认）"
+    green "2. WARP-Go"
+    read -rp "请输入选项 [1-2]：" clientInput
+    case $clientInput in
+        2) wpgoprofile ;;
+        *) wgcfprofile ;;
+    esac
 }
 
 showIP(){
@@ -1724,6 +1736,7 @@ menu(){
         17) wireproxy_changeport ;;
         18) switchWireProxy ;;
         19) uninstallWireProxy ;;
+        20) wpprofile ;;
         21) warpup ;;
         22) warpsw ;;
         23) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
