@@ -466,10 +466,12 @@ switchwgcf(){
     if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         startwgcf
         green "Wgcf-WARP 已启动成功！"
+        exit 1
     fi
     if [[ ! $gbwpv4 =~ on|plus ]] || [[ ! $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         green "Wgcf-WARP 已停止成功！"
+        exit 1
     fi
 }
 
@@ -509,9 +511,9 @@ wpgov44(){
     fi
 
     if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo6
             wpgoconf && wpgocheck && showIP
         else
@@ -520,9 +522,9 @@ wpgov44(){
             installwpgo
         fi
     elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo7
             wpgoconf && wpgocheck && showIP
         else
@@ -531,9 +533,9 @@ wpgov44(){
             installwpgo
         fi
     elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -542,9 +544,9 @@ wpgov44(){
             installwpgo
         fi
     elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为NAT IPv4+原生IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -558,16 +560,16 @@ wpgov44(){
 wpgov66(){
     checkgbwp
     if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
-        # stopwpgo
+        stopwpgo
         checkStack
     else
         checkStack
     fi
 
     if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (原生IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo2 && wpgo2=$wgo4 && wpgo3=$wgo6
             wpgoconf && wpgocheck && showIP
         else
@@ -576,9 +578,9 @@ wpgov66(){
             installwpgo
         fi
     elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo2 && wpgo2=$wgo5 && wpgo3=$wgo7
             wpgoconf && wpgocheck && showIP
         else
@@ -587,9 +589,9 @@ wpgov66(){
             installwpgo
         fi
     elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (原生 IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo2 && wpgo2=$wgo4 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -598,9 +600,9 @@ wpgov66(){
             installwpgo
         fi
     elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo2 && wpgo2=$wgo5 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -614,16 +616,16 @@ wpgov66(){
 wpgov46(){
     checkgbwp
     if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
-        # stopwpgo
+        stopwpgo
         checkStack
     else
         checkStack
     fi
 
     if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo3 && wpgo2=$wgo4 && wpgo3=$wgo6
             wpgoconf && wpgocheck && showIP
         else
@@ -632,9 +634,9 @@ wpgov46(){
             installwpgo
         fi
     elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo3 && wpgo2=$wgo5 && wpgo3=$wgo7
             wpgoconf && wpgocheck && showIP
         else
@@ -643,9 +645,9 @@ wpgov46(){
             installwpgo
         fi
     elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo3 && wpgo2=$wgo4 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -654,9 +656,9 @@ wpgov46(){
             installwpgo
         fi
     elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
-        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+        if [[ -a "/opt/warp-go/warp-go" ]]; then
             yellow "检测为NAT IPv4+原生 IPv6的VPS，正在安装Wgcf-WARP全局双栈模式 (WARP IPv4 + WARP IPv6)"
-            stopwgcf && switchconf
+            stopwpgo
             wpgo1=$wgo3 && wpgo2=$wgo5 && wpgo3=$wgo8
             wpgoconf && wpgocheck && showIP
         else
@@ -755,6 +757,38 @@ wpgocheck(){
             exit 1
         fi
     done
+}
+
+startwpgo(){
+    systemctl stop warp-go
+    systemctl disable warp-go >/dev/null 2>&1
+}
+
+stopwpgo(){
+    systemctl start warp-go
+    systemctl enable warp-go >/dev/null 2>&1
+}
+
+switchwpgo(){
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
+        startwpgo
+        green "WARP-Go 已启动成功！"
+        exit 1
+    fi
+    if [[ ! $gbwpv4 =~ on|plus ]] || [[ ! $gbwpv6 =~ on|plus ]]; then
+        stopwpgo
+        green "WARP-Go 已停止成功！"
+        exit 1
+    fi
+}
+
+uninstallwpgo(){
+    systemctl disable --now warp-go >/dev/null 2>&1
+    kill -15 $(pgrep warp-go) >/dev/null 2>&1
+    /opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --remove >/dev/null 2>&1
+    rm -rf /opt/warp-go /usr/bin/warp-go /lib/systemd/system/warp-go.service
+    green "WARP-Go 已彻底卸载成功!"
 }
 
 installcli(){
