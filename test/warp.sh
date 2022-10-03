@@ -162,8 +162,8 @@ wgcfreg(){
 }
 
 wgcfv44(){
-    checkwgcf
-    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         checkStack
     else
@@ -218,8 +218,8 @@ wgcfv44(){
 }
 
 wgcfv66(){
-    checkwgcf
-    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         checkStack
     else
@@ -274,8 +274,8 @@ wgcfv66(){
 }
 
 wgcfv46(){
-    checkwgcf
-    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         checkStack
     else
@@ -431,9 +431,9 @@ checkmtu(){
     green "MTU 最佳值=$MTU 已设置完毕"
 }
 
-checkwgcf(){
-    wgcfv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-    wgcfv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+checkgbwp(){
+    gbwpv6=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+    gbwpv4=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
 }
 
 wgcfcheck(){
@@ -442,15 +442,15 @@ wgcfcheck(){
     while [ $i -le 4 ]; do let i++
         wg-quick down wgcf >/dev/null 2>&1
         wg-quick up wgcf >/dev/null 2>&1
-        checkwgcf
-        if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+        checkgbwp
+        if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
             green "Wgcf-WARP 已启动成功！"
             break
         else
             red "Wgcf-WARP 启动失败！"
         fi
-        checkwgcf
-        if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
+        checkgbwp
+        if [[ ! $gbwpv4 =~ on|plus && ! $gbwpv6 =~ on|plus ]]; then
             red "安装Wgcf-WARP失败！"
             green "建议如下："
             yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
@@ -462,12 +462,12 @@ wgcfcheck(){
 }
 
 switchwgcf(){
-    checkwgcf
-    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         startwgcf
         green "Wgcf-WARP 已启动成功！"
     fi
-    if [[ ! $wgcfv4 =~ on|plus ]] || [[ ! $wgcfv6 =~ on|plus ]]; then
+    if [[ ! $gbwpv4 =~ on|plus ]] || [[ ! $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         green "Wgcf-WARP 已停止成功！"
     fi
@@ -497,6 +497,62 @@ uninstallwgcf(){
         sed -i '/^precedence[ ]*::ffff:0:0\/96[ ]*100/d' /etc/gai.conf
     fi
     green "Wgcf-WARP 已彻底卸载成功!"
+}
+
+wpgov44(){
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
+        # stopwpgo
+        checkStack
+    else
+        checkStack
+    fi
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv4的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4)"
+            stopwgcf && switchconf
+            wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo6
+            wpgoconf && wpgocheck && showIP
+        else
+            yellow "检测为纯IPv4的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4)"
+            wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo6
+            installwpgo
+        fi
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为纯IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf && switchconf
+            wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo7
+            wpgoconf && wpgocheck && showIP
+        else
+            yellow "检测为纯IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo7
+            installwpgo
+        fi
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为原生双栈的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf && switchconf
+            wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo8
+            wpgoconf && wpgocheck && showIP
+        else
+            yellow "检测为原生双栈的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wpgo1=$wgo1 && wpgo2=$wgo4 && wpgo3=$wgo8
+            installwpgo
+        fi
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        if [[ -n $(type -P wg-quick) && -n $(type -P wgcf) ]]; then
+            yellow "检测为NAT IPv4+原生 IPv6的VPS，正在切换为Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            stopwgcf && switchconf
+            wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo8
+            wpgoconf && wpgocheck && showIP
+        else
+            yellow "检测为NAT IPv4+原生IPv6的VPS，正在安装Wgcf-WARP全局单栈模式 (WARP IPv4 + 原生 IPv6)"
+            wpgo1=$wgo1 && wpgo2=$wgo5 && wpgo3=$wgo8
+            installwpgo
+        fi
+    fi
 }
 
 installwpgo(){
@@ -544,6 +600,10 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
+
+    wpgoconf
+    wpgocheck
+    showIP
 }
 
 wpgoreg(){
@@ -551,6 +611,38 @@ wpgoreg(){
         yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
         /opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf
     fi
+}
+
+wpgoconf(){
+    echo $wpgo1 | sh
+    echo $wpgo2 | sh
+    echo $wpgo3 | sh
+}
+
+wpgocheck(){
+    yellow "正在启动 WARP-Go"
+    i=0
+    while [ $i -le 4 ]; do let i++
+        systemctl stop warp-go
+        systemctl disable warp-go >/dev/null 2>&1
+        systemctl start warp-go
+        systemctl enable warp-go >/dev/null 2>&1
+        checkgbwp
+        if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
+            green "WARP-Go 已启动成功！"
+            break
+        else
+            red "WARP-Go 启动失败！"
+        fi
+        checkgbwp
+        if [[ ! $gbwpv4 =~ on|plus && ! $gbwpv6 =~ on|plus ]]; then
+            red "安装Wgcf-WARP失败！"
+            green "建议如下："
+            yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
+            yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
+            exit 1
+        fi
+    done
 }
 
 installcli(){
@@ -563,8 +655,8 @@ installcli(){
     
     checktun
 
-    checkwgcf
-    if [[ $wgcfv4 =~ on|plus ]] ||[[ $wgcfv6 =~ on|plus ]]; then
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] ||[[ $gbwpv6 =~ on|plus ]]; then
         stopwgcf
         checkv4v6
         startwgcf
@@ -750,9 +842,9 @@ installWireProxy(){
     initwgcf
     wgcfreg
     
-    checkwgcf
+    checkgbwp
     
-    if [[ $wgcfv4 =~ on|plus ]] || [[ $wgcfv6 =~ on|plus ]]; then
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
         wg-quick down wgcf >/dev/null 2>&1
         checkmtu
         checkv4v6
@@ -956,9 +1048,8 @@ warpsw1(){
             rm -f wgcf-profile.conf
             wg-quick up wgcf >/dev/null 2>&1
             yellow "正在检查Wgcf-WARP的WARP 免费账户连通性，请稍等..." && sleep 5
-            WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-            WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-            if [[ $WgcfV4Status == "on" ]] || [[ $WgcfV6Status == "on" ]]; then
+            checkgbwp
+            if [[ $gbwpv4 == "on" ]] || [[ $gbwpv6 == "on" ]]; then
                 green "Wgcf-WARP 账户类型切换为 WARP 免费账户 成功！"
             else
                 wg-quick down wgcf >/dev/null 2>&1
@@ -1034,9 +1125,8 @@ warpsw1(){
                 sed -i "s#Address.*128#Address = $warpIPv6Address#g" /etc/wireguard/wgcf.conf;
                 wg-quick up wgcf >/dev/null 2>&1
                 yellow "正在检查Wgcf-WARP的WARP+账户连通性，请稍等..." && sleep 5
-                WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-                WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-                if [[ $WgcfV4Status == "plus" ]] || [[ $WgcfV6Status == "plus" ]]; then
+                checkgbwp
+                if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv6 == "plus" ]]; then
                     green "Wgcf-WARP 账户类型切换为 WARP+ 成功！"
                 else
                     wg-quick down wgcf >/dev/null 2>&1
@@ -1137,10 +1227,9 @@ warpsw1(){
                 sed -i "s#Address.*128#Address = $wpteamv6address/128#g" /etc/wireguard/wgcf-profile.conf;
                 wg-quick up wgcf >/dev/null 2>&1
                 yellow "正在检查Wgcf-WARP的WARP Teams账户连通性, 请稍等..."
-                WgcfV4Status=$(curl -s4m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-                WgcfV6Status=$(curl -s6m8 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+                checkgbwp
                 retry_time=1
-                until [[ $WgcfV4Status =~ on|plus ]] || [[ $WgcfV6Status =~ on|plus ]]; do
+                until [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; do
                     red "无法联通WARP Teams账户, 正在尝试重启, 重试次数：$retry_time"
                     retry_time=$((${retry_time} + 1))
                     if [[ $retry_time == 4 ]]; then
