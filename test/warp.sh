@@ -339,25 +339,25 @@ installwgcf(){
 
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
-        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils qrencode
         if [[ $OSID == 9 ]] && [[ -z $(type -P resolvconf) ]]; then
             wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/resolvconf -O /usr/sbin/resolvconf
             chmod +x /usr/sbin/resolvconf
         fi
     fi
     if [[ $SYSTEM == "Fedora" ]]; then
-        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils
+        ${PACKAGE_INSTALL[int]} sudo curl wget iproute net-tools wireguard-tools iptables bc htop screen python3 iputils qrencode
     fi
     if [[ $SYSTEM == "Debian" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo wget curl lsb-release bc htop screen python3 inetutils-ping
+        ${PACKAGE_INSTALL[int]} sudo wget curl lsb-release bc htop screen python3 inetutils-ping qrencode
         echo "deb http://deb.debian.org/debian $(lsb_release -sc)-backports main" | tee /etc/apt/sources.list.d/backports.list
         ${PACKAGE_UPDATE[int]}
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
     fi
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop screen python3 inetutils-ping
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop screen python3 inetutils-ping qrencode
         ${PACKAGE_INSTALL[int]} --no-install-recommends net-tools iproute2 openresolv dnsutils wireguard-tools iptables
     fi
     
@@ -504,7 +504,7 @@ uninstallwgcf(){
 wpgov44(){
     checkgbwp
     if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
-        # stopwpgo
+        stopwpgo
         checkStack
     else
         checkStack
@@ -670,6 +670,13 @@ wpgov46(){
 }
 
 installwpgo(){
+    if [[ $SYSTEM == "CentOS" ]]; then
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop iputils screen python3 qrencode
+    else
+        ${PACKAGE_UPDATE[int]}
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3 qrencode
+    fi
+    
     arch=$(archAffix)
     if [[ $arch == "amd64" ]]; then
         flags=$(cat /proc/cpuinfo | grep flags | head -n 1 | cut -d: -f2)
@@ -817,14 +824,14 @@ installcli(){
     
     if [[ $SYSTEM == "CentOS" ]]; then
         ${PACKAGE_INSTALL[int]} epel-release
-        ${PACKAGE_INSTALL[int]} sudo curl wget net-tools bc htop iputils screen python3
+        ${PACKAGE_INSTALL[int]} sudo curl wget net-tools bc htop iputils screen python3 qrencode
         rpm -ivh http://pkg.cloudflareclient.com/cloudflare-release-el8.rpm
         ${PACKAGE_INSTALL[int]} cloudflare-warp
     fi
     
     if [[ $SYSTEM == "Debian" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3 qrencode
         [[ -z $(type -P gpg 2>/dev/null) ]] && ${PACKAGE_INSTALL[int]} gnupg
         [[ -z $(apt list 2>/dev/null | grep apt-transport-https | grep installed) ]] && ${PACKAGE_INSTALL[int]} apt-transport-https
         curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
@@ -835,7 +842,7 @@ installcli(){
     
     if [[ $SYSTEM == "Ubuntu" ]]; then
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3
+        ${PACKAGE_INSTALL[int]} sudo curl wget lsb-release bc htop inetutils-ping screen python3 qrencode
         curl https://pkg.cloudflareclient.com/pubkey.gpg | apt-key add -
         echo "deb http://pkg.cloudflareclient.com/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
         ${PACKAGE_UPDATE[int]}
@@ -976,10 +983,10 @@ uninstallcli(){
 
 installWireProxy(){
     if [[ $SYSTEM == "CentOS" ]]; then
-        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop iputils screen python3
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop iputils screen python3 qrencode
     else
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3
+        ${PACKAGE_INSTALL[int]} sudo curl wget bc htop inetutils-ping screen python3 qrencode
     fi
     
     wget -N https://cdn.jsdelivr.net/gh/taffychan/warp/files/wireproxy/wireproxy-$(archAffix) -O /usr/local/bin/wireproxy
@@ -1486,7 +1493,7 @@ warpsw(){
     esac
 }
 
-wgprofile(){
+wgcfprofile(){
     yellow "请选择将要生成的配置文件的网络环境："
     green "1. IPv4 （默认）"
     green "2. IPv6"
@@ -1504,6 +1511,23 @@ wgprofile(){
     yellow "文件已保存至：/root/wgcf-proxy.conf"
     yellow "节点配置二维码如下所示："
     qrencode -t ansiutf8 < /root/wgcf-proxy.conf
+}
+
+wpgoprofile(){
+    yellow "请选择将要生成的配置文件的网络环境："
+    green "1. IPv4 （默认）"
+    green "2. IPv6"
+    read -rp "请输入选项 [1-2]：" netInput
+    case $netInput in
+        1) endip="162.159.193.10" ;;
+        2) endip="[2606:4700:d0::]" ;;
+        *) endip="162.159.193.10" ;;
+    esac
+    /opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --export-wireguard=/root/warpgo-proxy.conf
+    green "WARP-Go的WireGuard配置文件已提取成功！"
+    yellow "文件已保存至：/root/warp-goproxy.conf"
+    yellow "节点配置二维码如下所示："
+    qrencode -t ansiutf8 < /root/warpgo-proxy.conf
 }
 
 showIP(){
