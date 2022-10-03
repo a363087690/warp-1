@@ -1524,7 +1524,8 @@ wpgoprofile(){
         *) endip="162.159.193.10" ;;
     esac
     result=$(/opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --export-wireguard=/root/warpgo-proxy.conf)
-    if [[ $result == "Success" ]]; then
+    sleep 2
+    if [[ ! $result == "Success" ]]; then
         red "WARP-Go的WireGuard配置文件生成失败！"
         exit 1
     fi
@@ -1740,7 +1741,7 @@ menu(){
         17) wireproxy_changeport ;;
         18) switchWireProxy ;;
         19) uninstallWireProxy ;;
-        20) wpprofile ;;
+        20) wgprofile ;;
         21) warpup ;;
         22) warpsw ;;
         23) wget -N --no-check-certificate https://gitlab.com/misakablog/warp-script/-/raw/main/netflix.sh && bash netflix.sh ;;
