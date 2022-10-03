@@ -62,9 +62,13 @@ wg8='sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1
 wg9='sed -i "7 s/^/PostUp = ip -4 rule add from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -4 rule delete from $(ip route get 1.1.1.1 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostUp = ip -6 rule add from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf && sed -i "7 s/^/PostDown = ip -6 rule delete from $(ip route get 2606:4700:4700::1111 | grep -oP '"'src \K\S+') lookup main\n/"'" /etc/wireguard/wgcf.conf'
 
 # WARP-Go 去除IPv4/IPv6
-wgo1="sed -i 's/#AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g' /opt/warp-go/warp.conf"
-wgo2="sed -i 's/#AllowedIPs.*/AllowedIPs = \:\:\/0/g' /opt/warp-go/warp.conf"
+wgo1='sed -i "s#.*AllowedIPs.*#AllowedIPs = 0.0.0.0/0#g" /opt/warp-go/warp.conf'
+wgo2='sed -i "s#.*AllowedIPs.*#AllowedIPs = ::/0#g" /opt/warp-go/warp.conf'
+wgo3='sed -i "s#.*AllowedIPs.*#AllowedIPs = 0.0.0.0/0,::/0#g" /opt/warp-go/warp.conf'
 # WARP-Go EndPoint
+wgo4='sed -i "/Endpoint6/d" /opt/warp-go/warp.conf && sed -i "s/162.159.*/162.159.193.10:1701/g" /opt/warp-go/warp.conf'
+wgo5='sed -i "/Endpoint6/d" /opt/warp-go/warp.conf && sed -i "s/162.159.*/[2606:4700:d0::a29f:c003]:1701/g" /opt/warp-go/warp.conf'
+# WARP-Go 允许外部IP地址
 
 if [[ -z $(type -P curl) ]]; then
     if [[ ! $SYSTEM == "CentOS" ]]; then
