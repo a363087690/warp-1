@@ -1523,7 +1523,11 @@ wpgoprofile(){
         2) endip="[2606:4700:d0::]" ;;
         *) endip="162.159.193.10" ;;
     esac
-    /opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --export-wireguard=/root/warpgo-proxy.conf
+    result=$(/opt/warp-go/warp-go --config=/opt/warp-go/warp.conf --export-wireguard=/root/warpgo-proxy.conf)
+    if [[ $result == "Success" ]]; then
+        red "WARP-Go的WireGuard配置文件生成失败！"
+        exit 1
+    fi
     sed -i "s/engage.cloudflareclient.com/$endip/g" /etc/wireguard/wgcf.conf
     green "WARP-Go的WireGuard配置文件已提取成功！"
     yellow "文件已保存至：/root/warp-goproxy.conf"
