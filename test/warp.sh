@@ -758,7 +758,7 @@ wpgocheck(){
         fi
         checkgbwp
         if [[ ! $gbwpv4 =~ on|plus && ! $gbwpv6 =~ on|plus ]]; then
-            red "安装WARP-Go失败！"
+            red "安装Wgcf-WARP失败！"
             green "建议如下："
             yellow "1. 强烈建议使用官方源升级系统及内核加速！如已使用第三方源及内核加速，请务必更新到最新版，或重置为官方源"
             yellow "2. 部分VPS系统极度精简，相关依赖需自行安装后再尝试"
@@ -1725,6 +1725,7 @@ menu(){
     echo -e ""
     read -rp "请输入选项 [0-23]：" menuChoice
     case $menuChoice in
+        0) exit 1 ;;
         1) wgcfv44 ;;
         2) wgcfv66 ;;
         3) wgcfv46 ;;
