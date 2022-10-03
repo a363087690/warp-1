@@ -1542,6 +1542,7 @@ menu(){
         3) wgcfv46 ;;
         4) switchwgcf ;;
         5) uninstallwgcf ;;
+        6) wpgov44 ;;
         11) warpcli=1 && installcli ;;
         12) warpcli=2 && installcli ;;
         13) warpcli_changeport ;;
