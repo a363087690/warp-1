@@ -1493,15 +1493,18 @@ warpsw3(){
     fi
 
     currallowips=$(cat /opt/warp-go/warp.conf | grep AllowedIPs)
-    currendpoint=$(cat /opt/warp-go/warp.conf | grep Endpoint)
 
     if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
+        currendpoint=$wgo4
         currpost=$wgo6
     elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        currendpoint=$wgo5
         currpost=$wgo7
     elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
+        currendpoint=$wgo4
         currpost=$wgo8
     elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        currendpoint=$wgo5
         currpost=$wgo8
     fi
 
@@ -1525,21 +1528,47 @@ warpsw3(){
         yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
         result=$(/opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf --license=$warpkey --device-name=$devicename)
         if [[ $result == "Success" ]]; then
-            echo ""
+            sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
+            echo $currendpoint | sh
+            echo $currpost | sh
+            systemctl start warp-go
+            checkgbwp
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+                green "WARP+ 账户升级成功！"
+            else
+                red "WARP+ 账户升级失败！"
+            fi
         else
             red "WARP+ 账户注册失败！正在还原为WARP 免费账户"
             until [[ -e /opt/warp-go/warp.conf ]]; do
                 yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
                 /opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf
             done
+            sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
+            echo $currendpoint | sh
+            echo $currpost | sh
+            systemctl start warp-go
+            red "WARP+账户升级失败！"
         fi
     fi
     if [[ $accountInput == 3 ]]; then
         read -rp "请输入Teams账户TOKEN: " teamstoken
+        systemctl stop warp-go
         if [[ -n $teamstoken ]]; then
             yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
             result=$(/opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf --team-config "$teamstoken")
+            sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
+            echo $currendpoint | sh
+            echo $currpost | sh
+            systemctl start warp-go
+            checkgbwp
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+                green "WARP Teams账户升级成功！"
+            else
+                red "WARP Teams账户升级失败！"
+            fi
         else
+            red "未输入Teams账户配置文件链接，正在使用脚本公用Teams账户..."
             rm -f /opt/warp-go/warp.conf
             cat <<EOF > /opt/warp-go/warp.conf
 [Account]
@@ -1556,6 +1585,16 @@ KeepAlive = 30
 #PostUp = 
 #PostDown =
 EOF
+            sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
+            echo $currendpoint | sh
+            echo $currpost | sh
+            systemctl start warp-go
+            checkgbwp
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+                green "WARP Teams账户升级成功！"
+            else
+                red "WARP Teams账户升级失败！"
+            fi
         fi
     fi
 }
