@@ -768,12 +768,12 @@ wpgocheck(){
 }
 
 startwpgo(){
-    systemctl stop warp-go
+    systemctl start warp-go
     systemctl disable warp-go >/dev/null 2>&1
 }
 
 stopwpgo(){
-    systemctl start warp-go
+    systemctl stop warp-go
     systemctl enable warp-go >/dev/null 2>&1
 }
 
@@ -1513,6 +1513,22 @@ warpsw3(){
     green "2. WARP+"
     green "3. WARP Teams (Zero Trust)"
     read -rp "请选择账户类型 [1-3]: " accountInput
+    if [[ $accountInput == 1 ]]; then
+        until [[ -e /opt/warp-go/warp.conf ]]; do
+            yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
+            /opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf
+        done
+        sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
+        echo $currendpoint | sh
+        echo $currpost | sh
+        systemctl start warp-go && sleep 3
+        checkgbwp
+        if [[ $gbwpv4 == "on" ]] || [[ $gbwpv6 == "on" ]]; then
+            green "WARP 免费账户切换成功！"
+        else
+            red "WARP 免费账户切换失败！"
+        fi
+    fi
     if [[ $accountInput == 2 ]]; then
         yellow "获取CloudFlare WARP账号密钥信息方法: "
         green "电脑: 下载并安装CloudFlare WARP→设置→偏好设置→账户→复制密钥到脚本中"
@@ -1525,15 +1541,16 @@ warpsw3(){
             read -rp "输入WARP账户许可证密钥 (26个字符): " warpkey
         done
         read -rp "请输入自定义设备名，如未输入则使用默认随机设备名: " devicename
+        systemctl stop warp-go
         yellow "正在向CloudFlare WARP注册账号, 如出现Success即为注册成功"
         result=$(/opt/warp-go/warp-go --register --config=/opt/warp-go/warp.conf --license=$warpkey --device-name=$devicename)
         if [[ $result == "Success" ]]; then
             sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
             echo $currendpoint | sh
             echo $currpost | sh
-            systemctl start warp-go
+            systemctl start warp-go && sleep 3
             checkgbwp
-            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv6 == "plus" ]]; then
                 green "WARP+ 账户升级成功！"
             else
                 red "WARP+ 账户升级失败！"
@@ -1547,7 +1564,7 @@ warpsw3(){
             sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
             echo $currendpoint | sh
             echo $currpost | sh
-            systemctl start warp-go
+            systemctl start warp-go && sleep 3
             red "WARP+账户升级失败！"
         fi
     fi
@@ -1560,9 +1577,9 @@ warpsw3(){
             sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
             echo $currendpoint | sh
             echo $currpost | sh
-            systemctl start warp-go
+            systemctl start warp-go && sleep 3
             checkgbwp
-            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv6 == "plus" ]]; then
                 green "WARP Teams账户升级成功！"
             else
                 red "WARP Teams账户升级失败！"
@@ -1588,9 +1605,9 @@ EOF
             sed -i "s#.*AllowedIPs.*#$currallowips#g" /opt/warp-go/warp.conf
             echo $currendpoint | sh
             echo $currpost | sh
-            systemctl start warp-go
+            systemctl start warp-go && sleep 3
             checkgbwp
-            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv4 == "plus" ]]; then
+            if [[ $gbwpv4 == "plus" ]] || [[ $gbwpv6 == "plus" ]]; then
                 green "WARP Teams账户升级成功！"
             else
                 red "WARP Teams账户升级失败！"
@@ -1603,10 +1620,12 @@ warpsw(){
     yellow "请选择需要切换WARP账户的WARP客户端:"
     echo -e " ${GREEN}1.${PLAIN} Wgcf-WARP 和 WireProxy-WARP 代理模式"
     echo -e " ${GREEN}2.${PLAIN} WARP-Cli ${RED}(目前仅支持升级WARP+账户)${PLAIN}"
-    read -rp "请选择客户端 [1-2]: " clientInput
+    echo -e " ${GREEN}3.${PLAIN} WARP-Go"
+    read -rp "请选择客户端 [1-3]: " clientInput
     case "$clientInput" in
         1 ) warpsw1 ;;
         2 ) warpsw2 ;;
+        3 ) warpsw3 ;;
         * ) exit 1 ;;
     esac
 }
