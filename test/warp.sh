@@ -1483,8 +1483,28 @@ warpsw2(){
 }
 
 warpsw3(){
+    checkgbwp
+    if [[ $gbwpv4 =~ on|plus ]] || [[ $gbwpv6 =~ on|plus ]]; then
+        systemctl stop warp-go
+        checkStack
+        systemctl start warp-go
+    else
+        checkStack
+    fi
+
     currallowips=$(cat /opt/warp-go/warp.conf | grep AllowedIPs)
     currendpoint=$(cat /opt/warp-go/warp.conf | grep Endpoint)
+
+    if [[ -n $lan4 && -n $out4 && -z $lan6 && -z $out6 ]]; then
+        currpost=$wgo6
+    elif [[ -z $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        currpost=$wgo7
+    elif [[ -n $lan4 && -n $out4 && -n $lan6 && -n $out6 ]]; then
+        currpost=$wgo8
+    elif [[ -n $lan4 && -z $out4 && -n $lan6 && -n $out6 ]]; then
+        currpost=$wgo8
+    fi
+
     yellow "请选择切换的账户类型"
     green "1. WARP 免费账户"
     green "2. WARP+"
