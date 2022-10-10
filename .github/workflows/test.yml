@@ -27,7 +27,7 @@ jobs:
         run: |
           cd warp-script
           cd files/wgcf
-          rm -f wgcf-latest-linux-amd64 wgcf-latest-linux-arm64 wgcf-latest-linux-s390x wgcf-fetchlog.txt
+          rm -f wgcf-fetchlog.txt
           actions_date=$(date)
           repo_last_ver=$(curl -Ls "https://api.github.com/repos/ViRb3/wgcf/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           repo_ver_name=$(curl -Ls "https://api.github.com/repos/ViRb3/wgcf/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed "s/v//g")
