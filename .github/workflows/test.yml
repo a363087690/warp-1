@@ -14,7 +14,6 @@ jobs:
         env:
           ACTION_DEPLOY_KEY: ${{ secrets.ACTION_DEPLOY_KEY }}
         run: |
-          # rm -f .git
           mkdir -p ~/.ssh/
           echo "$ACTION_DEPLOY_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
@@ -44,6 +43,7 @@ jobs:
           EOF
       - name: Upload to GitLab
         run: |
+          cd warp-script
           git add .
           git commit -m "Uploaded by Github Actions, Date: $(date)"
           git push
