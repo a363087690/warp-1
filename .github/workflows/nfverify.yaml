@@ -22,7 +22,7 @@ jobs:
           git config --global user.email "misakablog@protonmail.com"
           git config --global user.name "misakablog"
           git clone git@gitlab.com:misakablog/warp-script.git
-      - name: Check and fetch wgcf latest version
+      - name: Check and fetch Netfilx verify latest version
         run: |
           cd warp-script
           cd files/nfverify
